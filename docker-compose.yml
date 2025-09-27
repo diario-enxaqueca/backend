@@ -1,31 +1,45 @@
+
 services:
   db:
     image: mysql:8
-    container_name: diario_mysql
+    container_name: diario_db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root123
-      MYSQL_DATABASE: diario
-      MYSQL_USER: usuario
-      MYSQL_PASSWORD: senha123
+      MYSQL_ROOT_PASSWORD: rootpass123
+      MYSQL_DATABASE: ${MYSQL_DB}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
     ports:
       - "3306:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-      - ./mysql-init/:/docker-entrypoint-initdb.d:ro
+    networks:
+      - diario-net
 
   backend:
     build: .
     container_name: diario_backend
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-    volumes:
-      - .:/app
+    command: ["/app/wait-for-db.sh", "${MYSQL_HOST}:${MYSQL_PORT}", "uvicorn", "main:app", "--host", "${APP_HOST}", "--port", "${APP_PORT}", "--reload"]
     ports:
-      - "8000:8000"
-    depends_on:
-      - db
+        - "${APP_PORT}:${APP_PORT}"
     environment:
-      DATABASE_URL: mysql+pymysql://usuario:senha123@db:3306/diario
+        MYSQL_USER: ${MYSQL_USER}
+        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+        MYSQL_DB: ${MYSQL_DB}
+        MYSQL_HOST: ${MYSQL_HOST}
+        MYSQL_PORT: ${MYSQL_PORT}
+        SECRET_KEY: ${SECRET_KEY}
+    depends_on:
+        - db
+    volumes:
+        - .:/app
+    networks:
+        - diario-net
+
 
 volumes:
-  db_data:
+  mysql-data:
+
+networks:
+  diario-net:
+    driver: bridge

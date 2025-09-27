@@ -3,8 +3,8 @@ from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
-class Entrada(Base):
-    __tablename__ = "entradas"
+class Registro(Base):
+    __tablename__ = "registros"
 
     id = Column(Integer, primary_key=True, index=True)
     usuario_id = Column(Integer, nullable=False)
@@ -13,4 +13,4 @@ class Entrada(Base):
     descricao = Column(String(255), nullable=True)
 
     def __repr__(self):
-        return f"<Entrada(id={self.id}, usuario_id={self.usuario_id}, intensidade={self.intensidade})>"
+        return f"<Registro(id={self.id}, usuario_id={self.usuario_id}, intensidade={self.intensidade})>"
