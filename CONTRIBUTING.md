@@ -9,8 +9,8 @@ Obrigado por seu interesse em contribuir para o backend do Diário de Enxaqueca!
 
 Clone o repositório localmente:
 ```bash
-git clone https://github.com/sua-org/diario-enxaqueca-backend.git
-cd diario-enxaqueca-backend
+git clone https://github.com/diario-enxaqueca/backend.git
+cd backend
 ```
 
 #### Criar branch
