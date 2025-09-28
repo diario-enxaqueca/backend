@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter
-from source.registro.view_registro import router as registro_router
+from source.episodio.view_episodio import router as episodio_router
 
 # Instância do FastAPI
 app = FastAPI(title="Diário de Enxaqueca Backend", version="1.0")
@@ -13,5 +13,5 @@ def teste():
 
 app.include_router(test_router)
 
-# Router de registro
-app.include_router(registro_router, prefix="/registros", tags=["registros"])
+# Router de episodio
+app.include_router(episodio_router, prefix="/episodio", tags=["episodio"])

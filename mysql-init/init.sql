@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS usuario (
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Tabela de registros (registro de enxaqueca)
-CREATE TABLE IF NOT EXISTS registro (
+-- Tabela de episodio (episodio de enxaqueca)
+CREATE TABLE IF NOT EXISTS episodio (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,
     data DATE NOT NULL,
@@ -22,23 +22,23 @@ CREATE TABLE IF NOT EXISTS registro (
     FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Tabela de gatilhos (1 registro -> N gatilhos)
+-- Tabela de gatilhos (1 episodio -> N gatilhos)
 CREATE TABLE IF NOT EXISTS gatilho (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    registro_id INT NOT NULL,
+    episodio_id INT NOT NULL,
     tipo VARCHAR(100) NOT NULL,
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (registro_id) REFERENCES registro(id) ON DELETE CASCADE
+    FOREIGN KEY (episodio_id) REFERENCES episodio(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Tabela de medicações (Medicacao) (1 registro -> N medicacoes)
+-- Tabela de medicações (Medicacao) (1 episodio -> N medicacoes)
 CREATE TABLE IF NOT EXISTS medicacao (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    registro_id INT NOT NULL,
+    episodio_id INT NOT NULL,
     nome_medicacao VARCHAR(150) NOT NULL,
     dosagem VARCHAR(100),
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (registro_id) REFERENCES registro(id) ON DELETE CASCADE
+    FOREIGN KEY (episodio_id) REFERENCES episodio(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Tabela opcional para cache do dashboard (estatísticas pré-calculadas)

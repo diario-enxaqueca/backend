@@ -4,7 +4,7 @@ from sqlalchemy.orm import declarative_base
 Base = declarative_base()
 
 class Registro(Base):
-    __tablename__ = "registros"
+    __tablename__ = "episodio"
 
     id = Column(Integer, primary_key=True, index=True)
     usuario_id = Column(Integer, nullable=False)

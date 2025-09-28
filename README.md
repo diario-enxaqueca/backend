@@ -5,7 +5,7 @@ Este repositório contém a implementação do **MVP** utilizando **Python**, **
 
 ## Índice
 
-* Visão Geral
+* Visão Geral https://github.com/diario-enxaqueca/backend?tab=readme-ov-file#vis%C3%A3o-geral
 * MVP
 * Backlog
 * Tecnologias
@@ -19,9 +19,9 @@ Este repositório contém a implementação do **MVP** utilizando **Python**, **
 
 ## Visão Geral
 
-O projeto tem como objetivo fornecer **uma aplicação CRUD** para registro e acompanhamento de enxaquecas, permitindo ao usuário:
-* Criar registros de enxaqueca com informações como intensidade, gatilhos, medicação e observações.
-* Consultar, atualizar e excluir registros existentes.
+O projeto tem como objetivo fornecer **uma aplicação CRUD** para registro e acompanhamento de episódios de enxaqueca, permitindo ao usuário:
+* Criar episódios de enxaqueca com informações como intensidade, gatilhos, medicação e observações.
+* Consultar, atualizar e excluir espisódios existentes.
 * Testar a funcionalidade de forma estruturada utilizando testes automatizados.
 
 A aplicação segue o **padrão MVC**, com código organizado em `source/` e subpastas para cada regra de negócio.
@@ -30,7 +30,7 @@ A aplicação segue o **padrão MVC**, com código organizado em `source/` e sub
 
 Para a primeira entrega, o MVP contempla:
 
-Cadastro e gerenciamento de **registros de enxaqueca** (CRUD completo).
+Cadastro e gerenciamento de **episódios de enxaqueca** (CRUD completo).
 
 Backend funcional com **FastAPI**, **MySQL** via **SQLAlchemy** e documentação **Swagger** automática.
 
@@ -44,12 +44,12 @@ Lista de 10 histórias de usuário simplificadas para o MVP:
 
 | #  | História de Usuário                                          | Regras de Negócio                                           |
 | -- | ------------------------------------------------------------ | ----------------------------------------------------------- |
-| 1  | Como usuário, quero me cadastrar para acessar meus registros | Cadastro único por e-mail                                   |
-| 2  | Como usuário, quero fazer login para acessar meus registros  | Autenticação via JWT                                        |
-| 3  | Como usuário, quero criar registros de enxaqueca             | Campos: data, intensidade, gatilhos, medicação, observações |
-| 4  | Como usuário, quero listar meus registros                    | Listar apenas registros do usuário logado                   |
-| 5  | Como usuário, quero atualizar registros                      | Permitir edição de qualquer campo                           |
-| 6  | Como usuário, quero excluir registros                        | Exclusão física do registro                                 |
+| 1  | Como usuário, quero me cadastrar para acessar meus episódios | Cadastro único por e-mail                                   |
+| 2  | Como usuário, quero fazer login para acessar meus episódios  | Autenticação via JWT                                        |
+| 3  | Como usuário, quero criar episódios de enxaqueca             | Campos: data, intensidade, gatilhos, medicação, observações |
+| 4  | Como usuário, quero listar meus episódios                    | Listar apenas episódios do usuário logado                   |
+| 5  | Como usuário, quero atualizar episódios                      | Permitir edição de qualquer campo                           |
+| 6  | Como usuário, quero excluir episódios                        | Exclusão física do episódio de enxaqueca                    |
 | 7  | Como desenvolvedor, quero documentação da API                | Usar Swagger / FastAPI docs                                 |
 | 8  | Como desenvolvedor, quero testes unitários                   | Testes com pytest para endpoints CRUD                       |
 | 9  | Como usuário, quero protótipo visual                         | Interface seguindo protótipo Figma MVP                      |
@@ -73,11 +73,11 @@ diario-enxaqueca-backend/
 ├── source/
 │   ├── main.py           # Chama as rotas
 │   ├── config.py         # Configurações do projeto
-│   ├── registros/        # Regra de negócio: CRUD de registros
-│   │   ├── model_registro.py
-│   │   ├── view_registro.py
-│   │   ├── controller_registro.py
-│   │   └── teste_registro.py
+│   ├── episodio/        # Regra de negócio: CRUD de episódios
+│   │   ├── model_episodio.py
+│   │   ├── view_episodio.py
+│   │   ├── controller_episodio.py
+│   │   └── teste_episodio.py
 │   └── usuario/          # Futuro CRUD de usuários
 │       ├── model_usuario.py
 │       ├── view_usuario.py
@@ -122,19 +122,19 @@ POST /auth/register – Cadastrar usuário
 
 POST /auth/login – Login e geração de token JWT
 
-GET /entries – Listar registros do usuário
+GET /entries – Listar episódios de enxaqueca do usuário
 
-POST /entries – Criar novo registro
+POST /entries – Criar novo episódio de enxaqueca
 
-PUT /entries/{id} – Atualizar registro existente
+PUT /entries/{id} – Atualizar episódio de enxaqueca existente
 
-DELETE /entries/{id} – Excluir registro
+DELETE /entries/{id} – Excluir episódio de enxaqueca salvo
 
 ## Testes
 
 A estrutura de testes está configurada com pytest.
 
-Testes existentes para CRUD de registros em `source/registros/teste_registro.py`.
+Testes existentes para CRUD de episódios em `source/episodio/teste_episodio.py`.
 
 Um teste skipado apenas para demonstrar funcionamento:
 

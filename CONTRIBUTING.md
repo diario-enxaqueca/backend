@@ -22,7 +22,7 @@ git pull
 git checkout -b feature/nome-da-feature
 ```
 
-Use nomes de branch descritivos, por exemplo: `feature/criar-registro` ou `bugfix/fix-login`.
+Use nomes de branch descritivos, por exemplo: `feature/criar-episodio` ou `bugfix/fix-login`.
 
 #### Fazer commits
 
@@ -42,7 +42,7 @@ Exemplos de tipos:
 
 #### Exemplo de commit:
 ```bash
-git commit -m "feat(registro): adiciona endpoint para criar registro"
+git commit -m "feat(episodio): adiciona endpoint para criar episodio"
 ```
 
 #### Abrir Pull Request
