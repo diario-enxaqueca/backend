@@ -3,3 +3,4 @@ uvicorn
 sqlalchemy
 pymysql
 cryptography
+ruff==0.6.4
