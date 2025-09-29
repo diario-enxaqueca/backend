@@ -160,6 +160,16 @@ Executar testes:
 pytest
 ```
 
+Executar Lint:
+```code
+ruff check .
+```
+
+Para corrigir automaticamente:
+```code
+ruff check . --fix
+```
+
 ## Contribuição
 
 Contribuições são bem-vindas! Para manter consistência e boas práticas no projeto, siga as instruções detalhadas no arquivo [CONTRIBUTING.md](CONTRIBUTING.md).
