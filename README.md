@@ -85,8 +85,8 @@ backend/
 │   │   ├── view_usuario.py
 │   │   ├── controller_usuario.py
 │   │   └── teste_usuario.py
-    └── teste_db.py                 # a ser implementado
-│├── main.py                         # Chama as rotas
+│   └── teste_db.py                 # a ser implementado
+├── main.py                         # Chama as rotas
 ├── config.py                       # Configurações do projeto
 ├── .env
 ├── requirements.txt
@@ -102,8 +102,8 @@ backend/
 
 Clone o repositório:
 ```code
-git clone https://github.com/sua-org/diario-enxaqueca-backend.git
-cd diario-enxaqueca-backend
+git clone https://github.com/diario-enxaqueca/backend.git
+cd backend
 ```
 
 Crie um arquivo .env na raiz:
