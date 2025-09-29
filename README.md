@@ -5,7 +5,7 @@ Este repositório contém a implementação do **MVP** utilizando **Python**, **
 
 ## Índice
 
-* Visão Geral https://github.com/diario-enxaqueca/backend?tab=readme-ov-file#vis%C3%A3o-geral
+* Visão Geral 
 * MVP
 * Backlog
 * Tecnologias
@@ -26,34 +26,21 @@ O projeto tem como objetivo fornecer **uma aplicação CRUD** para registro e ac
 
 A aplicação segue o **padrão MVC**, com código organizado em `source/` e subpastas para cada regra de negócio.
 
-## MVP
+## Primeira Entrega
 
 Para a primeira entrega, o MVP contempla:
 
-Cadastro e gerenciamento de **episódios de enxaqueca** (CRUD completo).
+Cadastro de **episódios de enxaqueca** (CRUD completo).
 
-Backend funcional com **FastAPI**, **MySQL** via **SQLAlchemy** e documentação **Swagger** automática.
+Backend funcional com **FastAPI**, **MySQL** via **SQLAlchemy**.
 
-Estrutura de testes básica, com pelo **um teste skipado** para demonstrar configuração de testes.
+Estrutura de testes básica, com pelo **um teste skipado** para demonstrar a configuração de testes.
 
 Preparação para integração futura com frontend em **React.js + TypeScript**.
 
 ## Backlog
 
-Lista de 10 histórias de usuário simplificadas para o MVP:
-
-| #  | História de Usuário                                          | Regras de Negócio                                           |
-| -- | ------------------------------------------------------------ | ----------------------------------------------------------- |
-| 1  | Como usuário, quero me cadastrar para acessar meus episódios | Cadastro único por e-mail                                   |
-| 2  | Como usuário, quero fazer login para acessar meus episódios  | Autenticação via JWT                                        |
-| 3  | Como usuário, quero criar episódios de enxaqueca             | Campos: data, intensidade, gatilhos, medicação, observações |
-| 4  | Como usuário, quero listar meus episódios                    | Listar apenas episódios do usuário logado                   |
-| 5  | Como usuário, quero atualizar episódios                      | Permitir edição de qualquer campo                           |
-| 6  | Como usuário, quero excluir episódios                        | Exclusão física do episódio de enxaqueca                    |
-| 7  | Como desenvolvedor, quero documentação da API                | Usar Swagger / FastAPI docs                                 |
-| 8  | Como desenvolvedor, quero testes unitários                   | Testes com pytest para endpoints CRUD                       |
-| 9  | Como usuário, quero protótipo visual                         | Interface seguindo protótipo Figma MVP                      |
-| 10 | Como desenvolvedor, quero deploy com Docker                  | Backend e MySQL dockerizados                                |
+Lista de 10 histórias de usuário simplificadas para o MVP: [backlog.md](https://github.com/diario-enxaqueca/documentacao/blob/main/docs/backlog.md)
 
 ## Tecnologias
 
@@ -61,31 +48,53 @@ Lista de 10 histórias de usuário simplificadas para o MVP:
 * Framework: FastAPI
 * Banco de Dados: MySQL (dockerizado)
 * ORM: SQLAlchemy
-* Documentação da API: Swagger
-* Testes: Pytest
+* Documentação da API: Swagger (a ser implementado)
+* Testes: Pytest (para a primeira entrega apenas um teste skipado)
 * Docker & Docker Compose
 * Padrões de código: Clean Code, SOLID, Lint
 
 ## Estrutura do Projeto
 ```code
-diario-enxaqueca-backend/
+backend/
 │
+├── mysql-init/
+│   ├── init.sql                    # 
 ├── source/
-│   ├── main.py           # Chama as rotas
-│   ├── config.py         # Configurações do projeto
-│   ├── episodio/        # Regra de negócio: CRUD de episódios
+│   ├── episodio/                   # a ser implementado
 │   │   ├── model_episodio.py
 │   │   ├── view_episodio.py
 │   │   ├── controller_episodio.py
 │   │   └── teste_episodio.py
-│   └── usuario/          # Futuro CRUD de usuários
-│       ├── model_usuario.py
-│       ├── view_usuario.py
-│       ├── controller_usuario.py
-│       └── teste_usuario.py
+│   ├── dashboard/                  # a ser implementado
+│   │   ├── model_episodio.py
+│   │   ├── view_episodio.py
+│   │   ├── controller_episodio.py
+│   │   └── teste_episodio.py
+│   ├── gatilho/                    # a ser implementado
+│   │   ├── model_episodio.py
+│   │   ├── view_episodio.py
+│   │   ├── controller_episodio.py
+│   │   └── teste_episodio.py
+│   ├── medicacao/                  # a ser implementado
+│   │   ├── model_episodio.py
+│   │   ├── view_episodio.py
+│   │   ├── controller_episodio.py
+│   │   └── teste_episodio.py
+│   ├── usuario/                    # a ser implementado
+│   │   ├── model_usuario.py
+│   │   ├── view_usuario.py
+│   │   ├── controller_usuario.py
+│   │   └── teste_usuario.py
+    └── teste_db.py                 # a ser implementado
+│├── main.py                         # Chama as rotas
+├── config.py                       # Configurações do projeto
+├── .env
 ├── requirements.txt
 ├── Dockerfile
 ├── docker-compose.yml
+├── wait-for-db.sh
+├── CONTRIBUTING.md
+├── LICENSE
 └── README.md
 ```
 
