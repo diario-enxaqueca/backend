@@ -36,15 +36,15 @@ Formato:
 ```
 
 Exemplos de tipos aceitos:
-Tipo      |  Descrição                              
-----------+-----------------------------------------
-feat      |  Nova funcionalidade                    
-fix       |  Correção de bug                        
-docs      |  Alterações na documentação             
-style     |  Ajustes de formatação e lint           
-refactor  |  Refatoração sem mudança funcional      
-test      |  Adição ou modificação de testes        
-chore     |  Tarefas de build, CI/CD ou dependências
+|Tipo      |  Descrição                              |
+|----------|-----------------------------------------|
+|feat      |  Nova funcionalidade                    |
+|fix       |  Correção de bug                        |
+|docs      |  Alterações na documentação             |
+|style     |  Ajustes de formatação e lint           |
+|refactor  |  Refatoração sem mudança funcional      |
+|test      |  Adição ou modificação de testes        |
+|chore     |  Tarefas de build, CI/CD ou dependências|
 
 #### Exemplo de commit:
 ```bash
@@ -136,14 +136,14 @@ Durante a revisão:
 
 ## Ferramentas de Qualidade
 
-Função           |  Ferramenta              
------------------+--------------------------
-Linter           |  Ruff                    
-Formatação       |  Prettier (para frontend)
-Tipagem          |  Mypy                    
-Testes           |  Pytest                  
-CI/CD            |  GitHub Actions          
-Containerização  |  Docker                  
+|Função           |  Ferramenta              |
+|-----------------|--------------------------|
+|Linter           |  Ruff                    |
+|Formatação       |  Prettier (para frontend)|
+|Tipagem          |  Mypy                    |
+|Testes           |  Pytest                  |
+|CI/CD            |  GitHub Actions          |
+|Containerização  |  Docker                  |
 
 ## Código de Conduta
 Este projeto segue o [Contributor Covenant](https://www.contributor-covenant.org/).
