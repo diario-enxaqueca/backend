@@ -88,7 +88,7 @@ pytest
 5. Adicione e teste sua funcionalidade.
 6. Antes do commit, execute lint e testes.
 7. Faça push da feature branch.
-8. 
+
 ---
 
 #### Abrindo um Pull Request
