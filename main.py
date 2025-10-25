@@ -6,10 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from config.settings import settings
 
 # Importar rotas (views)
-# from source.usuario.view_usuario import router as usuario_router
-# from source.episodio.view_episodio import router as episodio_router
-# from source.gatilho.view_gatilho import router as gatilho_router
-# from source.medicacao.view_medicacao import router as medicacao_router
+from source.usuario.view_usuario import router as usuario_router
+from source.episodio.view_episodio import router as episodio_router
+from source.gatilho.view_gatilho import router as gatilho_router
+from source.medicacao.view_medicacao import router as medicacao_router
 
 # Criar instância do FastAPI
 app = FastAPI(
@@ -29,10 +29,10 @@ app.add_middleware(
 )
 
 # Registrar routers
-# app.include_router(usuario_router, prefix="/api/usuarios", tags=["Usuários"])
-# app.include_router(episodio_router, prefix="/api/episodios", tags=["Episódios"])
-# app.include_router(gatilho_router, prefix="/api/gatilhos", tags=["Gatilhos"])
-# app.include_router(medicacao_router, prefix="/api/medicacoes", tags=["Medicações"])
+app.include_router(usuario_router, prefix="/api/usuarios", tags=["Usuários"])
+app.include_router(episodio_router, prefix="/api/episodios", tags=["Episódios"])
+app.include_router(gatilho_router, prefix="/api/gatilhos", tags=["Gatilhos"])
+app.include_router(medicacao_router, prefix="/api/medicacoes", tags=["Medicações"])
 
 
 @app.get("/")
