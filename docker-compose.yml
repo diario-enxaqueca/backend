@@ -1,3 +1,4 @@
+version: '3.8'
 
 services:
   db:
@@ -6,36 +7,46 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: rootpass123
-      MYSQL_DATABASE: ${MYSQL_DB}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: diario_enxaqueca
+      MYSQL_USER: diario_user
+      MYSQL_PASSWORD: senha123
     volumes:
       - mysql-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
     ports:
       - "3306:3306"
     networks:
       - diario-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpass123"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
 
   backend:
     build: .
     container_name: diario_backend
-    command: ["/app/wait-for-db.sh", "${MYSQL_HOST}:${MYSQL_PORT}", "uvicorn", "main:app", "--host", "${APP_HOST}", "--port", "${APP_PORT}", "--reload"]
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     ports:
-        - "${APP_PORT}:${APP_PORT}"
+      - "8000:8000"
     environment:
-        MYSQL_USER: ${MYSQL_USER}
-        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-        MYSQL_DB: ${MYSQL_DB}
-        MYSQL_HOST: ${MYSQL_HOST}
-        MYSQL_PORT: ${MYSQL_PORT}
-        SECRET_KEY: ${SECRET_KEY}
+      MYSQL_USER: diario_user
+      MYSQL_PASSWORD: senha123
+      MYSQL_DB: diario_enxaqueca
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+      SECRET_KEY: dev_secret_key_change_in_production_min_32_chars
+      DEBUG: True
+      PYTHONUNBUFFERED: 1
     depends_on:
-        - db
+      db:
+        condition: service_healthy
     volumes:
-        - .:/app
+      - .:/app
     networks:
-        - diario-net
-
+      - diario-net
+    restart: on-failure
 
 volumes:
   mysql-data:
