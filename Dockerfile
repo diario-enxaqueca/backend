@@ -1,7 +1,5 @@
-# Imagem base
 FROM python:3.11-slim
 
-# Cria diretório da aplicação
 WORKDIR /app
 
 # Instalar dependências do sistema
@@ -9,16 +7,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     default-mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia requirements
+# Copiar requirements
 COPY requirements.txt .
 
-# Instala dependências
+# Instalar dependências Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia todo o código
+# Copiar código
 COPY . .
 
-# Expõe porta
+# Rodar os testes antes de iniciar a aplicação
+RUN pytest --maxfail=1 --disable-warnings -q
+
+# Expor porta
 EXPOSE 8000
 
 # Comando padrão

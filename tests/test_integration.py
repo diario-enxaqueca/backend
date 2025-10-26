@@ -14,10 +14,11 @@ def test_fluxo_completo_usuario_episodio(client):
         "email": "fluxo@test.com",
         "senha": "senha12345"
     })
-    assert response.status_code == 200
+    assert response.status_code == 201
     
     # 2. Login
     response = client.post("/api/usuarios/login", json={
+        "nome": "Fluxo Teste",
         "email": "fluxo@test.com",
         "senha": "senha12345"
     })

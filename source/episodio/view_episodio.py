@@ -7,7 +7,7 @@ from .controller_episodio import (
     create_episodio, get_episodios_usuario, get_episodio,
     update_episodio, delete_episodio
 )
-from datetime import date
+from datetime import date, datetime
 
 router = APIRouter()
 
@@ -26,8 +26,14 @@ class EpisodioOut(BaseModel):
     data_criacao: date
     data_atualizacao: date
 
+    @validator("data_criacao", "data_atualizacao", pre=True)
+    def convert_datetime_to_date(cls, value):
+        if isinstance(value, datetime):
+            return value.date()
+        return value
+    
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # --- CRUD endpoints ---
 

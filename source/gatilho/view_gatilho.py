@@ -29,7 +29,7 @@ class GatilhoOut(BaseModel):
     data_criacao: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class GatilhoUpdate(BaseModel):
     nome: constr(strip_whitespace=True, min_length=2, max_length=100) = Field(

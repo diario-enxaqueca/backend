@@ -36,7 +36,7 @@ class MedicacaoOut(BaseModel):
     data_criacao: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class MedicacaoUpdate(BaseModel):
     nome: Optional[constr(strip_whitespace=True, min_length=2, max_length=100)] = Field(
@@ -112,41 +112,33 @@ def editar_medicacao(
     db: Session = Depends(get_db),
     user = Depends(get_current_usuario)
 ):
-    """
-    Edita uma medicação.
-    
-    **Regras de Negócio:**
-    - Se alterar o nome, deve ser único (não pode duplicar com outra medicação do usuário)
-    - Dosagem pode ser atualizada ou removida (enviando null)
-    """
     medicacao = get_medicacao(db, medicacao_id, usuario_id=user.id)
     if not medicacao:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Medicação não encontrada"
-        )
+        raise HTTPException(status_code=404, detail="Medicação não encontrada")
     
-    # Se está alterando o nome, verificar duplicatas
     if data.nome:
         existing = get_medicacao_by_nome(db, user.id, data.nome)
         if existing and existing.id != medicacao_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Já existe outra medicação com este nome"
-            )
+            raise HTTPException(status_code=400, detail="Já existe outra medicação com este nome")
     
-    medicacao = update_medicacao(
-        db, 
-        medicacao, 
-        nome=data.nome, 
-        dosagem=data.dosagem
-    )
-    if not medicacao:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Erro ao atualizar medicação"
-        )
+    update_data = data.dict(exclude_unset=True)  # pega só os campos enviados
+
+    if "dosagem" in update_data:
+        # Permite setar explicitamente dosagem para None
+        medicacao.dosagem = update_data["dosagem"].strip() if update_data["dosagem"] else None
+
+    if "nome" in update_data:
+        medicacao.nome = update_data["nome"].strip()
+
+    try:
+        db.commit()
+        db.refresh(medicacao)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Erro ao atualizar medicação")
+
     return medicacao
+
 
 @router.delete("/{medicacao_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Medicações"])
 def excluir_medicacao(

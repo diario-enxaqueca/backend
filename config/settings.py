@@ -1,13 +1,14 @@
 """
 Configurações centralizadas da aplicação usando Pydantic Settings.
 """
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Configurações da aplicação carregadas do .env"""
 
     # Banco de Dados
+    MYSQL_ROOT_PASSWORD: str  # ✅ Adicionado
     MYSQL_USER: str
     MYSQL_PASSWORD: str
     MYSQL_DB: str
@@ -25,9 +26,12 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    # Configuração do Pydantic V2
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="ignore"  # ✅ Ignora campos extras do .env
+    )
 
 
 # Instância global de configurações
