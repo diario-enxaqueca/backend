@@ -27,12 +27,12 @@ jobs:
           MYSQL_DATABASE: ${{ secrets.MYSQL_DB }}
           MYSQL_USER: ${{ secrets.MYSQL_USER }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-        healthcheck:
-          test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p", "${{ secrets.MYSQL_ROOT_PASSWORD }}"]
-          interval: 10s
-          timeout: 5s
-          retries: 5
-          start_period: 40s
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -p$MYSQL_ROOT_PASSWORD"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+          --health-start-period=40s
 
     steps:
       - name: Checkout code
