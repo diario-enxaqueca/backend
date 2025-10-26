@@ -14,10 +14,9 @@ jobs:
         image: mysql:8
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DB }}
           MYSQL_USER: ${{ secrets.MYSQL_USER }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-          MYSQL_DB: ${{ secrets.MYSQL_DB }}
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
         ports:
           - 3306:3306
         options: >-
@@ -28,22 +27,27 @@ jobs:
         healthcheck:
           start_period: 40s
 
-    steps:
-      - uses: actions/checkout@v3
+    env:
+      DATABASE_URL: mysql+pymysql://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@127.0.0.1:3306/${{ secrets.MYSQL_DB }}
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
 
-      - name: Set up Python
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
-          python-version: 3.11
+          python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install --no-cache-dir -r requirements.txt
 
-      - name: Wait for MySQL
-        run: until mysqladmin ping -h 127.0.0.1 --silent; do sleep 1; done
+      - name: Wait for MySQL to be ready
+        run: |
+          until mysqladmin ping -h 127.0.0.1 --silent; do
+            sleep 2
+          done
 
       - name: Run tests
-        env:
-          DATABASE_URL: mysql+pymysql://diario_user:${{ secrets.MYSQL_PASSWORD }}@127.0.0.1:3306/diario_enxaqueca
-          SECRET_KEY: dev_secret_key_32_chars_1234567
         run: pytest --maxfail=1 --disable-warnings -q
