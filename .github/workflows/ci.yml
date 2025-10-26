@@ -1,0 +1,39 @@
+name: CI Pipeline with Docker Compose
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Set up Docker Compose
+      uses: docker/setup-docker@v2
+      with:
+        version: 'latest'
+
+    - name: Build and run containers
+      run: |
+        docker-compose up --build -d
+
+    - name: Wait for DB to be healthy
+      run: |
+        ./wait-for-db.sh db:3306 --timeout=60 --strict -- echo "Database is up"
+
+    - name: Run tests inside backend container
+      run: |
+        docker-compose exec backend pytest --maxfail=1 --disable-warnings -q
+
+    - name: Stop containers
+      if: always()
+      run: |
+        docker-compose down
