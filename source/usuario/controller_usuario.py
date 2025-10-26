@@ -15,13 +15,15 @@ MAX_PASSWORD_LENGTH = 72
 
 def hash_password(senha: str) -> str:
     """Gera hash truncando a senha se for exceder o limite de 72 bytes."""
-    senha_truncada = senha.encode("utf-8")[:MAX_PASSWORD_LENGTH].decode("utf-8", "ignore")
+    senha_truncada = senha.encode("utf-8")[:MAX_PASSWORD_LENGTH].decode("utf-8",
+                                                                        "ignore")
     return pwd_context.hash(senha_truncada)
 
 
 def verify_password(senha: str, senha_hash: str) -> bool:
     """Verifica a senha truncando antes de comparar."""
-    senha_truncada = senha.encode("utf-8")[:MAX_PASSWORD_LENGTH].decode("utf-8", "ignore")
+    senha_truncada = senha.encode("utf-8")[:MAX_PASSWORD_LENGTH].decode("utf-8",
+                                                                        "ignore")
     return pwd_context.verify(senha_truncada, senha_hash)
 
 

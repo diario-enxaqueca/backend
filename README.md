@@ -151,6 +151,7 @@ Um teste skipado apenas para demonstrar funcionamento:
 import pytest
 
 @pytest.mark.skip(reason="Teste skipado para entrega MVP")
+
 def test_exemplo_skipado():
     assert True
 ```

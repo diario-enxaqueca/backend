@@ -8,12 +8,11 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 import sys
 import os
+from config.database import Base, get_db
+from main import app
 
 # Adicionar diretório raiz ao path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from config.database import Base, get_db
-from main import app
 
 # URL do banco de testes (SQLite em memória)
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -51,10 +50,10 @@ def client(db):
             pass
 
     app.dependency_overrides[get_db] = override_get_db
-    
+
     with TestClient(app) as test_client:
         yield test_client
-    
+
     app.dependency_overrides.clear()
 
 
@@ -69,16 +68,16 @@ def usuario_teste(client):
         "email": "teste_usuario@email.com",
         "senha": "senha12345"  # ✅ Senha válida: 10 caracteres
     }
-    
+
     response = client.post("/api/usuarios/register", json=dados)
-    
+
     # Debug se falhar
     if response.status_code != 201:
-        print(f"❌ Erro ao criar usuário teste:")
+        print("❌ Erro ao criar usuário teste:")
         print(f"Status: {response.status_code}")
         print(f"Response: {response.json()}")
         pytest.fail(f"Falha ao criar usuário teste: {response.json()}")
-    
+
     return {
         "id": response.json()["id"],
         "nome": dados["nome"],
@@ -95,13 +94,13 @@ def auth_token(client, usuario_teste):
         "email": usuario_teste["email"],
         "senha": usuario_teste["senha"]
     })
-    
+
     if response.status_code != 200:
-        print(f"❌ Erro no login:")
+        print("❌ Erro no login:")
         print(f"Status: {response.status_code}")
         print(f"Response: {response.json()}")
         pytest.fail(f"Falha no login: {response.json()}")
-    
+
     return response.json()["access_token"]
 
 

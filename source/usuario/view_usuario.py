@@ -3,13 +3,11 @@ View (Rotas) para Usuários - Endpoints REST.
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, EmailStr, constr, Field
-from typing import Optional
+from pydantic import BaseModel, EmailStr, constr
 from config.database import get_db
 from .controller_usuario import (
     get_usuario_by_email, create_usuario, authenticate_user,
-    update_usuario, delete_usuario, get_usuario_by_id
-)
+    update_usuario, delete_usuario)
 from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordBearer
 from config.settings import settings
@@ -20,14 +18,15 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/usuarios/login")
 
 # --- SCHEMAS ---
 
-class UsuarioCreate(BaseModel):
 
+class UsuarioCreate(BaseModel):
     nome: constr(min_length=3, max_length=100)
     email: EmailStr
     senha: constr(min_length=8, max_length=72)  # Limite fixado
 
     class Config:
         from_attributes = True
+
 
 class UsuarioOut(BaseModel):
     id: int
@@ -38,15 +37,18 @@ class UsuarioOut(BaseModel):
     class Config:
         from_attributes = True
 
+
 class Token(BaseModel):
     access_token: str
     token_type: str
 
 # --- JWT ---
 
+
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.utcnow() + (
+        expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(
         to_encode,
@@ -54,7 +56,9 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
         algorithm=settings.ALGORITHM
     )
 
-def get_current_usuario(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+
+def get_current_usuario(db: Session = Depends(get_db),
+                        token: str = Depends(oauth2_scheme)):
     """
     Dependency para obter usuário autenticado a partir do token JWT.
     """
@@ -63,15 +67,16 @@ def get_current_usuario(db: Session = Depends(get_db), token: str = Depends(oaut
         detail="Credenciais inválidas",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(token, settings.SECRET_KEY,
+                             algorithms=[settings.ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    
+
     user = get_usuario_by_email(db, email)
     if user is None:
         raise credentials_exception
@@ -79,11 +84,13 @@ def get_current_usuario(db: Session = Depends(get_db), token: str = Depends(oaut
 
 # --- ROTAS ---
 
-@router.post("/register", response_model=UsuarioOut, status_code=status.HTTP_201_CREATED, tags=["Usuários"])
+
+@router.post("/register", response_model=UsuarioOut,
+             status_code=status.HTTP_201_CREATED, tags=["Usuários"])
 def register_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db)):
     """
     Registra novo usuário.
-    
+
     **Regras:**
     - Email deve ser único
     - Senha: 8-72 caracteres (limite do bcrypt)
@@ -96,6 +103,7 @@ def register_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db)):
     user = create_usuario(db, usuario.nome, usuario.email, usuario.senha)
     return user
 
+
 @router.post("/login", response_model=Token, tags=["Usuários"])
 def login(form_data: UsuarioCreate, db: Session = Depends(get_db)):
     """
@@ -107,24 +115,29 @@ def login(form_data: UsuarioCreate, db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="E-mail ou senha incorretos"
         )
-    
+
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     token = create_access_token(
-        data={"sub": user.email}, 
+        data={"sub": user.email},
         expires_delta=access_token_expires
     )
     return {"access_token": token, "token_type": "bearer"}
+
 
 @router.get("/me", response_model=UsuarioOut, tags=["Usuários"])
 def read_me(current_user=Depends(get_current_usuario)):
     return current_user
 
+
 @router.put("/me", response_model=UsuarioOut, tags=["Usuários"])
-def update_me(data: UsuarioCreate, db: Session = Depends(get_db), current_user=Depends(get_current_usuario)):
+def update_me(data: UsuarioCreate, db: Session = Depends(get_db),
+              current_user=Depends(get_current_usuario)):
     user = update_usuario(db, current_user, nome=data.nome, email=data.email)
     return user
 
+
 @router.delete("/me", status_code=204, tags=["Usuários"])
-def delete_me(db: Session = Depends(get_db), current_user=Depends(get_current_usuario)):
+def delete_me(db: Session = Depends(get_db),
+              current_user=Depends(get_current_usuario)):
     delete_usuario(db, current_user)
     return None

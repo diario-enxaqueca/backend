@@ -16,12 +16,13 @@ router = APIRouter()
 
 # --- SCHEMAS ---
 
+
 class GatilhoCreate(BaseModel):
-    nome: constr(strip_whitespace=True, min_length=2, max_length=100) = Field(
-        ..., 
-        description="Nome do gatilho (ex: Estresse, Chocolate, Café)",
-        example="Estresse"
-    )
+    nome: constr(strip_whitespace=True,
+                 min_length=2, max_length=100) = Field(
+                     ..., description="Nome do gatilho "
+                     "(ex: Estresse, Chocolate, Café)", example="Estresse")
+
 
 class GatilhoOut(BaseModel):
     id: int
@@ -31,23 +32,26 @@ class GatilhoOut(BaseModel):
     class Config:
         from_attributes = True
 
+
 class GatilhoUpdate(BaseModel):
-    nome: constr(strip_whitespace=True, min_length=2, max_length=100) = Field(
-        ..., 
-        description="Novo nome para o gatilho"
-    )
+    nome: constr(strip_whitespace=True,
+                 min_length=2, max_length=100) = Field(
+                     ..., description="Novo nome para o gatilho")
 
 # --- ROTAS ---
 
-@router.post("/", response_model=GatilhoOut, status_code=status.HTTP_201_CREATED, tags=["Gatilhos"])
+
+@router.post("/", response_model=GatilhoOut,
+             status_code=status.HTTP_201_CREATED,
+             tags=["Gatilhos"])
 def criar_gatilho(
     data: GatilhoCreate,
     db: Session = Depends(get_db),
-    user = Depends(get_current_usuario)
+    user=Depends(get_current_usuario)
 ):
     """
     Cria um novo gatilho para o usuário logado.
-    
+
     **Regras de Negócio:**
     - Nome deve ser único por usuário
     - Nome é case-sensitive e será salvo com espaços removidos
@@ -58,7 +62,7 @@ def criar_gatilho(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Gatilho já cadastrado"
         )
-    
+
     gatilho = create_gatilho(db, usuario_id=user.id, nome=data.nome)
     if not gatilho:
         raise HTTPException(
@@ -67,21 +71,23 @@ def criar_gatilho(
         )
     return gatilho
 
+
 @router.get("/", response_model=list[GatilhoOut], tags=["Gatilhos"])
 def listar_gatilhos(
     db: Session = Depends(get_db),
-    user = Depends(get_current_usuario)
+    user=Depends(get_current_usuario)
 ):
     """
     Lista todos os gatilhos do usuário logado, ordenados alfabeticamente.
     """
     return get_gatilhos_usuario(db, usuario_id=user.id)
 
+
 @router.get("/{gatilho_id}", response_model=GatilhoOut, tags=["Gatilhos"])
 def ver_gatilho(
     gatilho_id: int,
     db: Session = Depends(get_db),
-    user = Depends(get_current_usuario)
+    user=Depends(get_current_usuario)
 ):
     """
     Visualiza detalhes de um gatilho específico.
@@ -94,16 +100,17 @@ def ver_gatilho(
         )
     return gatilho
 
+
 @router.put("/{gatilho_id}", response_model=GatilhoOut, tags=["Gatilhos"])
 def editar_gatilho(
     gatilho_id: int,
     data: GatilhoUpdate,
     db: Session = Depends(get_db),
-    user = Depends(get_current_usuario)
+    user=Depends(get_current_usuario)
 ):
     """
     Edita o nome de um gatilho.
-    
+
     **Regras de Negócio:**
     - Novo nome deve ser único (não pode duplicar com outro gatilho do usuário)
     """
@@ -113,7 +120,7 @@ def editar_gatilho(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Gatilho não encontrado"
         )
-    
+
     # Verificar se o novo nome já existe em outro gatilho
     existing = get_gatilho_by_nome(db, user.id, data.nome)
     if existing and existing.id != gatilho_id:
@@ -121,7 +128,7 @@ def editar_gatilho(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Já existe outro gatilho com este nome"
         )
-    
+
     gatilho = update_gatilho(db, gatilho, nome=data.nome)
     if not gatilho:
         raise HTTPException(
@@ -130,15 +137,18 @@ def editar_gatilho(
         )
     return gatilho
 
-@router.delete("/{gatilho_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Gatilhos"])
+
+@router.delete("/{gatilho_id}",
+               status_code=status.HTTP_204_NO_CONTENT,
+               tags=["Gatilhos"])
 def excluir_gatilho(
     gatilho_id: int,
     db: Session = Depends(get_db),
-    user = Depends(get_current_usuario)
+    user=Depends(get_current_usuario)
 ):
     """
     Exclui um gatilho.
-    
+
     **Nota:** Associações com episódios serão removidas automaticamente.
     """
     gatilho = get_gatilho(db, gatilho_id, usuario_id=user.id)

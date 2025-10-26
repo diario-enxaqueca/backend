@@ -1,9 +1,11 @@
 """
 Model para Gatilhos - Fatores que podem desencadear enxaquecas.
 """
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func, UniqueConstraint
+from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import ForeignKey, func, UniqueConstraint
 from sqlalchemy.orm import relationship
 from config.database import Base
+
 
 class Gatilho(Base):
     __tablename__ = "gatilhos"

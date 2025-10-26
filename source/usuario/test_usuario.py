@@ -5,9 +5,7 @@ import pytest
 from source.usuario.controller_usuario import hash_password, verify_password
 from fastapi.testclient import TestClient
 from main import app
-
-from config.database import SessionLocal, Base, get_db, DATABASE_URL
-
+from config.database import get_db, DATABASE_URL
 import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -15,6 +13,7 @@ from sqlalchemy.orm import sessionmaker
 
 engine = create_engine(DATABASE_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 
 @pytest.fixture(scope="function")
 def db():
@@ -60,6 +59,7 @@ def usuario_teste(client):
     response = client.post("/api/usuarios/register", json=data)
     assert response.status_code == 201
     return data
+
 
 @pytest.fixture
 def auth_header(client, usuario_teste):

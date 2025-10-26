@@ -57,20 +57,27 @@ services:
       - diario-net
     restart: on-failure
 
+  lint:
+    build: .
+    volumes:
+      - .:/app 
+    working_dir: /app
+    command: flake8 .
+
   tests:
-      build: .
-      container_name: diario_tests
-      env_file:
-        - .env
-      depends_on:
-        db:
-          condition: service_healthy
-      environment:
-        DATABASE_URL: mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:${MYSQL_PORT}/${MYSQL_DB}
-        # Outras vars necessárias
-      command: pytest --maxfail=1 --disable-warnings -q
-      networks:
-        - diario-net
+    build: .
+    container_name: diario_tests
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:${MYSQL_PORT}/${MYSQL_DB}
+      # Outras vars necessárias
+    command: pytest --maxfail=1 --disable-warnings -q
+    networks:
+      - diario-net
 
 volumes:
   mysql-data:

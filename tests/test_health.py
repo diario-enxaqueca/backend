@@ -2,6 +2,7 @@
 Teste básico de health check.
 """
 
+
 def test_health_check(client):
     """Testa endpoint de health check."""
     response = client.get("/health")

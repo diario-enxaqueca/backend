@@ -19,10 +19,16 @@ app = FastAPI(
     debug=settings.DEBUG
 )
 
+origins = [
+    "http://localhost:3000",     # URL do frontend local dev
+    "http://frontend",           # Nome do serviço frontend no Docker
+    # Você pode adicionar outras origens permitidas aqui
+]
+
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Em produção, especificar domínios permitidos
+    allow_origins=origins,  # Em produção, especificar domínios permitidos
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -36,7 +42,7 @@ app.include_router(medicacao_router, prefix="/api/medicacoes", tags=["Medicaçõ
 
 
 @app.get("/")
-def root():
+async def root():
     """Endpoint raiz para verificar se a API está funcionando."""
     return {
         "message": "Diário de Enxaqueca API",

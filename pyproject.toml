@@ -16,3 +16,8 @@ ignore = []
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']  # ajuste para sua versão do Python
+skip-string-normalization = true

@@ -4,8 +4,7 @@ Testes para o módulo Gatilho.
 import pytest
 from fastapi.testclient import TestClient
 from main import app
-from config.database import SessionLocal, Base, get_db, DATABASE_URL
-
+from config.database import get_db, DATABASE_URL
 import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -13,6 +12,7 @@ from sqlalchemy.orm import sessionmaker
 
 engine = create_engine(DATABASE_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 
 @pytest.fixture(scope="function")
 def db():
@@ -44,7 +44,6 @@ def client(db):
     app.dependency_overrides[get_db] = lambda: db
     with TestClient(app) as c:
         yield c
-
 
 
 @pytest.fixture

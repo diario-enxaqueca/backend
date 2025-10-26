@@ -1,7 +1,11 @@
 from sqlalchemy.orm import Session
 from .model_episodio import Episodio
 
-def create_episodio(db: Session, usuario_id: int, data: str, intensidade: int, duracao: int = None, observacoes: str = None):
+
+def create_episodio(
+        db: Session, usuario_id: int, data: str,
+        intensidade: int, duracao: int = None,
+        observacoes: str = None):
     episodio = Episodio(
         usuario_id=usuario_id,
         data=data,
@@ -14,6 +18,7 @@ def create_episodio(db: Session, usuario_id: int, data: str, intensidade: int, d
     db.refresh(episodio)
     return episodio
 
+
 def get_episodios_usuario(db: Session, usuario_id: int, skip: int = 0, limit: int = 10):
     return (
         db.query(Episodio)
@@ -23,12 +28,14 @@ def get_episodios_usuario(db: Session, usuario_id: int, skip: int = 0, limit: in
         .all()
     )
 
+
 def get_episodio(db: Session, episodio_id: int, usuario_id: int):
     return (
         db.query(Episodio)
         .filter(Episodio.id == episodio_id, Episodio.usuario_id == usuario_id)
         .first()
     )
+
 
 def update_episodio(db: Session, episodio: Episodio, **kwargs):
     for field, value in kwargs.items():
@@ -37,6 +44,7 @@ def update_episodio(db: Session, episodio: Episodio, **kwargs):
     db.commit()
     db.refresh(episodio)
     return episodio
+
 
 def delete_episodio(db: Session, episodio: Episodio):
     db.delete(episodio)

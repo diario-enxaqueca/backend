@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Date, Text, DateTime, ForeignKey, func
+from sqlalchemy import Column, Integer, Date, Text, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship
 from config.database import Base
+
 
 class Episodio(Base):
     __tablename__ = "episodios"

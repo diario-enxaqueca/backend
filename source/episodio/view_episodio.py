@@ -11,11 +11,14 @@ from datetime import date, datetime
 
 router = APIRouter()
 
+
 class EpisodioCreate(BaseModel):
     data: date = Field(..., description="Data do episódio (YYYY-MM-DD)")
-    intensidade: conint(ge=0, le=10) = Field(..., description="Intensidade, 0=leve, 10=extrema")
+    intensidade: conint(ge=0, le=10) = Field(
+        ..., description="Intensidade,0=leve,10=extrema")
     duracao: int = Field(None, description="Duração em minutos")
     observacoes: constr(strip_whitespace=True, max_length=500) = None
+
 
 class EpisodioOut(BaseModel):
     id: int
@@ -31,43 +34,56 @@ class EpisodioOut(BaseModel):
         if isinstance(value, datetime):
             return value.date()
         return value
-    
+
     class Config:
         from_attributes = True
 
 # --- CRUD endpoints ---
 
-@router.post("/", response_model=EpisodioOut, status_code=status.HTTP_201_CREATED, tags=["Episódios"])
-def criar_episodio(ep: EpisodioCreate, db: Session = Depends(get_db), user = Depends(get_current_usuario)):
+
+@router.post("/", response_model=EpisodioOut,
+             status_code=status.HTTP_201_CREATED, tags=["Episódios"])
+def criar_episodio(ep: EpisodioCreate,
+                   db: Session = Depends(get_db),
+                   user=Depends(get_current_usuario)):
     episodio = create_episodio(db, usuario_id=user.id, **ep.dict())
     return episodio
 
+
 @router.get("/", response_model=list[EpisodioOut], tags=["Episódios"])
-def listar_episodios(
-    skip: int = 0,
-    limit: int = Query(10, le=100),
-    db: Session = Depends(get_db),
-    user = Depends(get_current_usuario)
-):
+def listar_episodios(skip: int = 0,
+                     limit: int = Query(10, le=100),
+                     db: Session = Depends(get_db),
+                     user=Depends(get_current_usuario)):
     return get_episodios_usuario(db, usuario_id=user.id, skip=skip, limit=limit)
 
+
 @router.get("/{episodio_id}", response_model=EpisodioOut, tags=["Episódios"])
-def ver_episodio(episodio_id: int, db: Session = Depends(get_db), user = Depends(get_current_usuario)):
+def ver_episodio(episodio_id: int,
+                 db: Session = Depends(get_db),
+                 user=Depends(get_current_usuario)):
     episodio = get_episodio(db, episodio_id, usuario_id=user.id)
     if not episodio:
         raise HTTPException(404, detail="Episódio não encontrado")
     return episodio
 
+
 @router.put("/{episodio_id}", response_model=EpisodioOut, tags=["Episódios"])
-def editar_episodio(episodio_id: int, ep: EpisodioCreate, db: Session = Depends(get_db), user = Depends(get_current_usuario)):
+def editar_episodio(episodio_id: int,
+                    ep: EpisodioCreate,
+                    db: Session = Depends(get_db),
+                    user=Depends(get_current_usuario)):
     episodio = get_episodio(db, episodio_id, usuario_id=user.id)
     if not episodio:
         raise HTTPException(404, detail="Episódio não encontrado")
     episodio = update_episodio(db, episodio, **ep.dict())
     return episodio
 
+
 @router.delete("/{episodio_id}", status_code=204, tags=["Episódios"])
-def excluir_episodio(episodio_id: int, db: Session = Depends(get_db), user = Depends(get_current_usuario)):
+def excluir_episodio(episodio_id: int,
+                     db: Session = Depends(get_db),
+                     user=Depends(get_current_usuario)):
     episodio = get_episodio(db, episodio_id, usuario_id=user.id)
     if not episodio:
         raise HTTPException(404, detail="Episódio não encontrado")

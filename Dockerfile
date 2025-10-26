@@ -13,6 +13,7 @@ COPY requirements.txt .
 # Instalar dependências Python
 RUN pip install --no-cache-dir -r requirements.txt
 
+
 # Copiar código
 COPY . .
 

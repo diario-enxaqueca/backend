@@ -4,8 +4,7 @@ Testes para o módulo Medicação.
 import pytest
 from fastapi.testclient import TestClient
 from main import app
-from config.database import SessionLocal, Base, get_db, DATABASE_URL
-
+from config.database import get_db, DATABASE_URL
 import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -13,6 +12,7 @@ from sqlalchemy.orm import sessionmaker
 
 engine = create_engine(DATABASE_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 
 @pytest.fixture(scope="function")
 def db():
@@ -45,6 +45,7 @@ def client(db):
     with TestClient(app) as c:
         yield c
 
+
 @pytest.fixture
 def auth_header(client):
     # Registrar usuário
@@ -56,11 +57,16 @@ def auth_header(client):
     assert register_resp.status_code == 201
 
     # Login para obter token
-    login_resp = client.post("/api/usuarios/login", json={"nome": "Med Tester", "email": "medicacao@test.com", "senha": "senha12345"})
+    login_resp = client.post(
+        "/api/usuarios/login",
+        json={"nome": "Med Tester",
+              "email": "medicacao@test.com",
+              "senha": "senha12345"})
     assert login_resp.status_code == 200
     token = login_resp.json().get("access_token")
     assert token is not None
     return {"Authorization": f"Bearer {token}"}
+
 
 def test_crud_medicacao_completo(auth_header, client):
     """Testa CRUD completo de medicações."""
@@ -123,7 +129,6 @@ def test_crud_medicacao_completo(auth_header, client):
     assert response.status_code == 404
 
 
-
 def test_medicacao_duplicada(auth_header, client):
     """Testa que não permite criar medicação duplicada."""
 
@@ -137,12 +142,12 @@ def test_medicacao_duplicada(auth_header, client):
     # Tentar criar duplicada
     response = client.post(
         "/api/medicacoes/",
-        json={"nome": "Dipirona", "dosagem": "1000mg"},  # Dosagem diferente, mas nome igual
+        json={"nome": "Dipirona", "dosagem": "1000mg"},
+        # Dosagem diferente, mas nome igual
         headers=auth_header
     )
     assert response.status_code == 400
     assert "já cadastrada" in response.json()["detail"].lower()
-
 
 
 @pytest.mark.parametrize("dados_invalidos,campo_erro", [
@@ -159,7 +164,6 @@ def test_validacao_campos(auth_header, client, dados_invalidos, campo_erro):
     )
     assert response.status_code == 422  # Validation error
     assert campo_erro in str(response.json())
-
 
 
 def test_medicacao_sem_dosagem(auth_header, client):
@@ -193,4 +197,3 @@ def test_medicacao_sem_dosagem(auth_header, client):
     print("Response após remoção de dosagem:", response.json())
     assert response.status_code == 200
     assert response.json()["dosagem"] is None
-
