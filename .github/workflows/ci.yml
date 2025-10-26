@@ -11,7 +11,7 @@ jobs:
 
     env:
       MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-      MYSQL_DB: ${{ secrets.MYSQL_DB }}
+      MYSQL_DATABASE: ${{ secrets.MYSQL_DB }}
       MYSQL_USER: ${{ secrets.MYSQL_USER }}
       MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
@@ -24,7 +24,7 @@ jobs:
           - 3306:3306
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-          MYSQL_DB: ${{ secrets.MYSQL_DB }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DB }}
           MYSQL_USER: ${{ secrets.MYSQL_USER }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
         options: >-
