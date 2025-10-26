@@ -14,9 +14,10 @@ jobs:
         image: mysql:8
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-          MYSQL_DATABASE: diario_enxaqueca
-          MYSQL_USER: diario_user
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DB: ${{ secrets.MYSQL_DB }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
         ports:
           - 3306:3306
         options: >-
