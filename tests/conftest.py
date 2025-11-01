@@ -31,18 +31,21 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 @pytest.fixture(scope="function")
 def db():
     """Fixture que cria um banco de dados limpo para cada teste."""
+    # Cria as tabelas do metadata antes do teste
     Base.metadata.create_all(bind=engine)
     db_session = TestingSessionLocal()
     try:
         yield db_session
     finally:
         db_session.close()
+        # Dropa as tabelas após o teste para isolar testes
         Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture(scope="function")
 def client(db):
-    """Fixture que fornece um TestClient do FastAPI."""
+    """Fixture que fornece um TestClient do FastAPI com override do get_db."""
+
     def override_get_db():
         try:
             yield db
@@ -54,24 +57,24 @@ def client(db):
     with TestClient(app) as test_client:
         yield test_client
 
+    # Limpa override após uso
     app.dependency_overrides.clear()
 
 
 @pytest.fixture
 def usuario_teste(client):
     """
-    Fixture que cria um usuário de teste.
-    IMPORTANTE: Senha deve ter 8-72 caracteres (limite bcrypt).
+    Fixture que cria um usuário de teste via API no serviço de autenticação.
+    Nota: Senha com tamanho entre 8 e 72 caracteres (limite bcrypt).
     """
     dados = {
         "nome": "Usuario Teste",
         "email": "teste_usuario@email.com",
-        "senha": "senha12345"  # ✅ Senha válida: 10 caracteres
+        "senha": "senha12345"
     }
 
-    response = client.post("/api/usuarios/register", json=dados)
+    response = client.post("/api/auth/register", json=dados)
 
-    # Debug se falhar
     if response.status_code != 201:
         print("❌ Erro ao criar usuário teste:")
         print(f"Status: {response.status_code}")
@@ -79,18 +82,19 @@ def usuario_teste(client):
         pytest.fail(f"Falha ao criar usuário teste: {response.json()}")
 
     return {
-        "id": response.json()["id"],
+        "id": response.json().get("id"),
         "nome": dados["nome"],
         "email": dados["email"],
-        "senha": dados["senha"]
+        "senha": dados["senha"],
     }
 
 
 @pytest.fixture
 def auth_token(client, usuario_teste):
-    """Fixture que retorna um token JWT válido."""
-    response = client.post("/api/usuarios/login", json={
-        "nome": usuario_teste["nome"],  # ✅ Adicionado nome
+    """Fixture que retorna token JWT válido para usuário de teste."""
+
+    response = client.post("/api/auth/login", json={
+        "nome": usuario_teste["nome"],
         "email": usuario_teste["email"],
         "senha": usuario_teste["senha"]
     })
@@ -101,10 +105,12 @@ def auth_token(client, usuario_teste):
         print(f"Response: {response.json()}")
         pytest.fail(f"Falha no login: {response.json()}")
 
-    return response.json()["access_token"]
+    return response.json().get("access_token")
 
 
 @pytest.fixture
 def auth_header(auth_token):
-    """Fixture que retorna headers de autenticação."""
+    """Fixture que retorna header Authorization para usar
+    em requisições autenticadas."""
+
     return {"Authorization": f"Bearer {auth_token}"}

@@ -1,0 +1,33 @@
+from pydantic import BaseModel, Field, constr
+from typing import Optional
+from datetime import datetime
+
+# --- SCHEMAS ---
+
+
+class MedicacaoCreate(BaseModel):
+    nome: constr(strip_whitespace=True, min_length=2, max_length=100) = Field(
+        ..., description="Nome da medicação (ex: Paracetamol, Ibuprofeno)",
+        example="Paracetamol"
+    )
+    dosagem: Optional[constr(strip_whitespace=True, max_length=100)] = Field(
+        None, description="Dosagem opcional (ex: 500mg, 1 comprimido)",
+        example="500mg"
+    )
+
+
+class MedicacaoOut(BaseModel):
+    id: int
+    nome: str
+    dosagem: Optional[str] = None
+    data_criacao: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class MedicacaoUpdate(BaseModel):
+    nome: Optional[constr(strip_whitespace=True, min_length=2, max_length=100)] = Field(
+        None, description="Novo nome para a medicação")
+    dosagem: Optional[constr(strip_whitespace=True, max_length=100)] = Field(
+        None, description="Nova dosagem (ou null para remover)")

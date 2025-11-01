@@ -49,7 +49,7 @@ def auth_header(client):
     email = "episodio_test@example.com"
     senha = "senha12345"
     # Registra usuário para testar episódios
-    r = client.post("/api/usuarios/register", json={
+    r = client.post("/api/auth/register", json={
         "nome": "Episodio Tester",
         "email": email,
         "senha": senha
@@ -60,7 +60,7 @@ def auth_header(client):
     assert r.status_code == 201
 
     # Login para obter token
-    r = client.post("/api/usuarios/login",
+    r = client.post("/api/auth/login",
                     json={"nome": "Episodio Tester", "email": email, "senha": senha})
     print("Login status:", r.status_code)
     if r.status_code != 200:

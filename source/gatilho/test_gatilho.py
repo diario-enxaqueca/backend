@@ -49,7 +49,7 @@ def client(db):
 @pytest.fixture
 def auth_header(client):
     # Registrar usuário
-    register_resp = client.post("/api/usuarios/register", json={
+    register_resp = client.post("/api/auth/register", json={
         "nome": "Gatilho Tester",
         "email": "gatilho@test.com",
         "senha": "senha12345"
@@ -57,7 +57,7 @@ def auth_header(client):
     assert register_resp.status_code == 201
 
     # Login para obter token
-    login_resp = client.post("/api/usuarios/login", json={
+    login_resp = client.post("/api/auth/login", json={
         "nome": "Gatilho Tester",
         "email": "gatilho@test.com",
         "senha": "senha12345"

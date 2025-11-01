@@ -1,15 +1,15 @@
-"""
-Testes para o módulo Usuário.
-"""
 import pytest
-from source.usuario.controller_usuario import hash_password, verify_password
 from fastapi.testclient import TestClient
+from source.usuario.controller_usuario import get_usuario_by_email
+from source.usuario.view_usuario import get_current_user
+from source.auth.controller_auth import hash_password
+from source.usuario.model_usuario import Usuario
 from main import app
 from config.database import get_db, DATABASE_URL
-import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-
+import sqlalchemy as sa
+from datetime import datetime
 
 engine = create_engine(DATABASE_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -49,105 +49,94 @@ def client(db):
 
 @pytest.fixture
 def usuario_teste(client):
-    """Cria o usuário para testes e retorna seus dados."""
-    email = "teste_usuario_email_unico@email.com"
-    data = {
-        "nome": "Usuario Teste",
-        "email": email,
-        "senha": "senha12345"
-    }
-    response = client.post("/api/usuarios/register", json=data)
-    assert response.status_code == 201
-    return data
+    # Já que registro é no serviço auth, use dados mockados ou consulta ao banco direto
+    return {"id": 1, "nome": "Usuario Teste", "email": "usuario@teste.com"}
 
 
 @pytest.fixture
-def auth_header(client, usuario_teste):
-    response = client.post("/api/usuarios/login", json={
-        "nome": "Usuario Teste",
-        "email": usuario_teste["email"],
-        "senha": usuario_teste["senha"]
-    })
-    assert response.status_code == 200
-    token = response.json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+def usuario_real(db):
+    usuario = Usuario(
+        nome="Usuario Teste",
+        email="usuario@teste.com",
+        senha_hash=hash_password("12345678"),
+        data_cadastro=datetime.utcnow()
+    )
+    db.add(usuario)
+    db.commit()
+    db.refresh(usuario)
+    return usuario
 
 
-def test_bcrypt_fix():
-    """Testa hash e verificação de senha com mais de 72 caracteres."""
-    senha = "a" * 200
-    hash_ = hash_password(senha)
-    print("Hash gerado:", hash_[:50], "...")
-    assert verify_password(senha, hash_) is True
+def test_get_usuario_by_email(db):
+    email = "usuario_novo@teste.com"
+    senha = "senha12345"
+    usuario = Usuario(nome="Usuario Novo",
+                      email=email, senha_hash=senha)
+    db.add(usuario)
+    db.commit()
+    user = get_usuario_by_email(db, email)
+    assert user.email == email
 
 
-def test_register_usuario(client, db):
-    """Testa registro de novo usuário."""
-    response = client.post("/api/usuarios/register", json={
-        "nome": "João Silva",
-        "email": "joao@email.com",
-        "senha": "senha12345"
-    })
-    assert response.status_code == 201
-    data = response.json()
-    assert data["email"] == "joao@email.com"
-    assert data["nome"] == "João Silva"
-    assert "id" in data
+def test_read_me_route(client, usuario_teste):
+    # simula token válido, ou utilize mock de dependência get_current_user
+    def override_get_current_user():
+        class User:
+            def __init__(self, nome, email):
+                self.nome = nome
+                self.email = email
+                self.id = 1
+                self.data_cadastro = datetime.utcnow()
+        return User(usuario_teste["nome"], usuario_teste["email"])
+    app.dependency_overrides[get_current_user] = override_get_current_user
+
+    res = client.get("/api/usuarios/me")
+    app.dependency_overrides.clear()
+    assert res.status_code == 200
+    assert res.json()["email"] == usuario_teste["email"]
 
 
-def test_register_email_duplicado(client, usuario_teste):
-    """Testa que não permite email duplicado."""
-    response = client.post("/api/usuarios/register", json={
-        "nome": "Outro Usuario",
-        "email": usuario_teste["email"],
-        "senha": "outrasenha123"
-    })
-    assert response.status_code == 400
-    assert "já cadastrado" in response.json()["detail"].lower()
-
-
-def test_login_sucesso(client, usuario_teste):
-    """Testa login com credenciais corretas."""
-    response = client.post("/api/usuarios/login", json={
-        "nome": usuario_teste["nome"],
-        "email": usuario_teste["email"],
-        "senha": usuario_teste["senha"]
-    })
-    assert response.status_code == 200
-    data = response.json()
-    assert "access_token" in data
-    assert data["token_type"] == "bearer"
-
-
-def test_login_senha_incorreta(client, usuario_teste):
-    """Testa login com senha incorreta."""
-    response = client.post("/api/usuarios/login", json={
-        "nome": usuario_teste["nome"],
-        "email": usuario_teste["email"],
-        "senha": "senhaerrada"
-    })
-    assert response.status_code == 401
-
-
-def test_get_perfil(client, auth_header, usuario_teste):
-    """Testa obtenção de perfil do usuário logado."""
-    response = client.get("/api/usuarios/me", headers=auth_header)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["email"] == usuario_teste["email"]
-    assert data["nome"] == usuario_teste["nome"]
-
-
-@pytest.mark.parametrize("senha_invalida,motivo", [
-    ("123", "muito_curta"),
-    ("1234567", "ainda_curta"),
-    ("A" * 73, "muito_longa"),  # ✅ Testa senha muito longa
+@pytest.mark.parametrize("novo_nome, novo_email", [
+    ("Nome Alterado", "novo@email.com"),
+    (None, "emailonly@mail.com"),
+    ("NomeSomente", None),
 ])
-def test_validacao_senha(client, senha_invalida, motivo):
-    """Testa validação de senha."""
-    response = client.post("/api/usuarios/register", json={
-        "nome": "Teste",
-        "email": f"teste_{motivo}@email.com",
-        "senha": senha_invalida
-    })
-    assert response.status_code == 422  # Validation error
+def test_update_usuario(client, usuario_real, novo_nome, novo_email):
+    def override_get_current_user():
+        return usuario_real
+    app.dependency_overrides[get_current_user] = override_get_current_user
+
+    data = {}
+    if novo_nome is not None:
+        data["nome"] = novo_nome
+    if novo_email is not None:
+        data["email"] = novo_email
+    data["senha"] = "12345678"
+
+    res = client.put("/api/usuarios/me", json=data)
+
+    print(f"Payload enviado: {data}")
+    print(f"Status code: {res.status_code}")
+    print(f"Response JSON: {res.json()}")
+
+    app.dependency_overrides.clear()
+    assert res.status_code == 200
+    if novo_nome:
+        assert res.json()["nome"] == novo_nome
+    if novo_email:
+        assert res.json()["email"] == novo_email
+
+
+def test_delete_usuario(client, usuario_real):
+    def override_get_current_user():
+        return usuario_real
+    app.dependency_overrides[get_current_user] = override_get_current_user
+
+    res = client.delete("/api/usuarios/me")
+    assert res.status_code == 204
+
+    app.dependency_overrides.clear()
+
+    # Verifica se o usuário foi realmente deletado
+    res_get = client.get("/api/usuarios/me")
+    assert res_get.status_code == 401  # Unauthorized após deleção

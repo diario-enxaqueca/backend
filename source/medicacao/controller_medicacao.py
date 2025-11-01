@@ -42,15 +42,17 @@ def get_medicacao(db: Session, medicacao_id: int, usuario_id: int):
     )
 
 
-def update_medicacao(db: Session,
-                     medicacao: Medicacao,
-                     nome: str = None,
-                     dosagem: str = None):
+def update_medicacao(db, medicacao: Medicacao,
+                     nome: str = None, dosagem: str = None):
     """Atualiza uma medicação."""
-    if nome:
+    if nome is not None:
         medicacao.nome = nome.strip()
-    if dosagem is not None:  # Permite definir como None
+    if dosagem is not None:
+        print(f"Atualizando dosagem para: {dosagem}")
         medicacao.dosagem = dosagem.strip() if dosagem else None
+        print(f"Dosagem setada: {medicacao.dosagem}")
+    else:
+        medicacao.dosagem = None  # Permitir remoção da dosagem
 
     try:
         db.commit()
@@ -58,7 +60,7 @@ def update_medicacao(db: Session,
         return medicacao
     except IntegrityError:
         db.rollback()
-        return None  # Nome duplicado
+        return None  # Nome duplicado ou erro
 
 
 def delete_medicacao(db: Session, medicacao: Medicacao):

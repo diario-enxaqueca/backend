@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field, constr
 from config.database import get_db
-from source.usuario.view_usuario import get_current_usuario
+from source.usuario.view_usuario import get_current_user
 from .controller_gatilho import (
     create_gatilho, get_gatilhos_usuario, get_gatilho,
     update_gatilho, delete_gatilho, get_gatilho_by_nome
@@ -47,7 +47,7 @@ class GatilhoUpdate(BaseModel):
 def criar_gatilho(
     data: GatilhoCreate,
     db: Session = Depends(get_db),
-    user=Depends(get_current_usuario)
+    user=Depends(get_current_user)
 ):
     """
     Cria um novo gatilho para o usuário logado.
@@ -75,7 +75,7 @@ def criar_gatilho(
 @router.get("/", response_model=list[GatilhoOut], tags=["Gatilhos"])
 def listar_gatilhos(
     db: Session = Depends(get_db),
-    user=Depends(get_current_usuario)
+    user=Depends(get_current_user)
 ):
     """
     Lista todos os gatilhos do usuário logado, ordenados alfabeticamente.
@@ -87,7 +87,7 @@ def listar_gatilhos(
 def ver_gatilho(
     gatilho_id: int,
     db: Session = Depends(get_db),
-    user=Depends(get_current_usuario)
+    user=Depends(get_current_user)
 ):
     """
     Visualiza detalhes de um gatilho específico.
@@ -106,7 +106,7 @@ def editar_gatilho(
     gatilho_id: int,
     data: GatilhoUpdate,
     db: Session = Depends(get_db),
-    user=Depends(get_current_usuario)
+    user=Depends(get_current_user)
 ):
     """
     Edita o nome de um gatilho.
@@ -144,7 +144,7 @@ def editar_gatilho(
 def excluir_gatilho(
     gatilho_id: int,
     db: Session = Depends(get_db),
-    user=Depends(get_current_usuario)
+    user=Depends(get_current_user)
 ):
     """
     Exclui um gatilho.

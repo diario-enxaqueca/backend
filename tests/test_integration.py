@@ -10,7 +10,7 @@ def test_fluxo_completo_usuario_episodio(client):
     Testa fluxo completo: registro → login → criar episódio → listar → editar → deletar
     """
     # 1. Registrar usuário
-    response = client.post("/api/usuarios/register", json={
+    response = client.post("/api/auth/register", json={
         "nome": "Fluxo Teste",
         "email": "fluxo@test.com",
         "senha": "senha12345"
@@ -18,7 +18,7 @@ def test_fluxo_completo_usuario_episodio(client):
     assert response.status_code == 201
 
     # 2. Login
-    response = client.post("/api/usuarios/login", json={
+    response = client.post("/api/auth/login", json={
         "nome": "Fluxo Teste",
         "email": "fluxo@test.com",
         "senha": "senha12345"

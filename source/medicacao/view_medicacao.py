@@ -4,46 +4,15 @@ View (Rotas) para Medicações - Endpoints REST para gerenciar medicações.
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from pydantic import BaseModel, Field, constr
-from typing import Optional
 from config.database import get_db
-from source.usuario.view_usuario import get_current_usuario
+from source.usuario.view_usuario import get_current_user
 from .controller_medicacao import (
     create_medicacao, get_medicacoes_usuario, get_medicacao,
-    delete_medicacao, get_medicacao_by_nome)
-from datetime import datetime
+    delete_medicacao, get_medicacao_by_nome, update_medicacao)
+from source.medicacao.schemas_medicacao import (
+    MedicacaoCreate, MedicacaoOut, MedicacaoUpdate)
 
 router = APIRouter()
-
-# --- SCHEMAS ---
-
-
-class MedicacaoCreate(BaseModel):
-    nome: constr(strip_whitespace=True, min_length=2, max_length=100) = Field(
-        ..., description="Nome da medicação (ex: Paracetamol, Ibuprofeno)",
-        example="Paracetamol"
-    )
-    dosagem: Optional[constr(strip_whitespace=True, max_length=100)] = Field(
-        None, description="Dosagem opcional (ex: 500mg, 1 comprimido)",
-        example="500mg"
-    )
-
-
-class MedicacaoOut(BaseModel):
-    id: int
-    nome: str
-    dosagem: Optional[str] = None
-    data_criacao: datetime
-
-    class Config:
-        from_attributes = True
-
-
-class MedicacaoUpdate(BaseModel):
-    nome: Optional[constr(strip_whitespace=True, min_length=2, max_length=100)] = Field(
-        None, description="Novo nome para a medicação")
-    dosagem: Optional[constr(strip_whitespace=True, max_length=100)] = Field(
-        None, description="Nova dosagem (ou null para remover)")
 
 # --- ROTAS ---
 
@@ -53,7 +22,7 @@ class MedicacaoUpdate(BaseModel):
 def criar_medicacao(
     data: MedicacaoCreate,
     db: Session = Depends(get_db),
-    user=Depends(get_current_usuario)
+    user=Depends(get_current_user)
 ):
     """
     Cria uma nova medicação para o usuário logado.
@@ -83,7 +52,7 @@ def criar_medicacao(
 @router.get("/", response_model=list[MedicacaoOut], tags=["Medicações"])
 def listar_medicacoes(
     db: Session = Depends(get_db),
-    user=Depends(get_current_usuario)
+    user=Depends(get_current_user)
 ):
     """
     Lista todas as medicações do usuário logado, ordenadas alfabeticamente.
@@ -95,7 +64,7 @@ def listar_medicacoes(
 def ver_medicacao(
     medicacao_id: int,
     db: Session = Depends(get_db),
-    user=Depends(get_current_usuario)
+    user=Depends(get_current_user)
 ):
     """
     Visualiza detalhes de uma medicação específica.
@@ -114,38 +83,33 @@ def editar_medicacao(
     medicacao_id: int,
     data: MedicacaoUpdate,
     db: Session = Depends(get_db),
-    user=Depends(get_current_usuario)
+    user=Depends(get_current_user)
 ):
     medicacao = get_medicacao(db, medicacao_id, usuario_id=user.id)
     if not medicacao:
         raise HTTPException(status_code=404, detail="Medicação não encontrada")
 
-    if data.nome:
+    if data.nome is not None:
         existing = get_medicacao_by_nome(db, user.id, data.nome)
         if existing and existing.id != medicacao_id:
             raise HTTPException(
                 status_code=400,
                 detail="Já existe outra medicação com este nome")
 
-    update_data = data.dict(exclude_unset=True)  # pega só os campos enviados
+    updated_medicacao = update_medicacao(
+        db,
+        medicacao,
+        nome=data.nome,
+        dosagem=data.dosagem
+    )
 
-    if "dosagem" in update_data:
-        # Permite setar explicitamente dosagem para None
-        medicacao.dosagem = (update_data["dosagem"].strip()
-                             if update_data["dosagem"] else None)
+    if updated_medicacao is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Erro ao atualizar medicação"
+        )
 
-    if "nome" in update_data:
-        medicacao.nome = update_data["nome"].strip()
-
-    try:
-        db.commit()
-        db.refresh(medicacao)
-    except IntegrityError as exc:
-        db.rollback()
-        raise HTTPException(status_code=400,
-                            detail="Erro ao atualizar medicação") from exc
-
-    return medicacao
+    return updated_medicacao
 
 
 @router.delete("/{medicacao_id}",
@@ -154,7 +118,7 @@ def editar_medicacao(
 def excluir_medicacao(
     medicacao_id: int,
     db: Session = Depends(get_db),
-    user=Depends(get_current_usuario)
+    user=Depends(get_current_user)
 ):
     """
     Exclui uma medicação.

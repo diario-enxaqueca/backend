@@ -8,6 +8,9 @@ from config.database import get_db, DATABASE_URL
 import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import IntegrityError
+from source.medicacao.controller_medicacao import update_medicacao
+from source.medicacao.model_medicacao import Medicacao
 
 
 engine = create_engine(DATABASE_URL)
@@ -49,7 +52,7 @@ def client(db):
 @pytest.fixture
 def auth_header(client):
     # Registrar usuário
-    register_resp = client.post("/api/usuarios/register", json={
+    register_resp = client.post("/api/auth/register", json={
         "nome": "Med Tester",
         "email": "medicacao@test.com",
         "senha": "senha12345"
@@ -58,7 +61,7 @@ def auth_header(client):
 
     # Login para obter token
     login_resp = client.post(
-        "/api/usuarios/login",
+        "/api/auth/login",
         json={"nome": "Med Tester",
               "email": "medicacao@test.com",
               "senha": "senha12345"})
@@ -166,6 +169,22 @@ def test_validacao_campos(auth_header, client, dados_invalidos, campo_erro):
     assert campo_erro in str(response.json())
 
 
+def test_update_medicacao_remove_dosagem(db):
+    medic = Medicacao(nome="Naramig", dosagem="800mg", usuario_id=1)
+    db.add(medic)
+    db.commit()
+    db.refresh(medic)
+
+    updated = update_medicacao(db, medic, dosagem=None)
+    db.refresh(updated)
+
+    # Forçar uma nova consulta para certificar que valor está salvo
+    db.expire_all()
+    medic_salvo = db.query(Medicacao).filter_by(id=medic.id).first()
+
+    assert medic_salvo.dosagem is None
+
+
 def test_medicacao_sem_dosagem(auth_header, client):
     """Testa criação e edição de medicação sem dosagem."""
 
@@ -197,3 +216,42 @@ def test_medicacao_sem_dosagem(auth_header, client):
     print("Response após remoção de dosagem:", response.json())
     assert response.status_code == 200
     assert response.json()["dosagem"] is None
+
+
+@pytest.mark.parametrize("novo_nome, nova_dosagem, esperado_nome, esperado_dosagem", [
+    ("Novo Nome", "100mg", "Novo Nome", "100mg"),      # atualização normal
+    (None, None, "Original", None),                  # sem alteração
+    ("Nome Atualizado", None, "Nome Atualizado", None)  # altera nome, remove dosagem
+])
+def test_update_medicacao_parametrizado(db, novo_nome, nova_dosagem,
+                                        esperado_nome, esperado_dosagem):
+    # Cria medicação inicial
+    medic = Medicacao(nome="Original", dosagem="50mg", usuario_id=1)
+    db.add(medic)
+    db.commit()
+    db.refresh(medic)
+
+    updated = update_medicacao(db, medic, nome=novo_nome, dosagem=nova_dosagem)
+    db.refresh(updated)
+
+    assert updated is not None
+    assert updated.nome == esperado_nome
+    assert updated.dosagem == esperado_dosagem
+
+
+def test_update_medicacao_integrity_error(db):
+    medic = Medicacao(nome="Original", dosagem="50mg", usuario_id=1)
+    db.add(medic)
+    db.commit()
+    db.refresh(medic)
+
+    def raise_integrity_error():
+        raise IntegrityError("Simulado", None, None)
+
+    original_commit = db.commit
+    db.commit = raise_integrity_error
+
+    result = update_medicacao(db, medic, nome="Duplicado", dosagem="25mg")
+    assert result is None
+
+    db.commit = original_commit
