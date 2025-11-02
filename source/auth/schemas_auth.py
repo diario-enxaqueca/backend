@@ -11,6 +11,14 @@ class UserCreate(BaseModel):
         from_attributes = True
 
 
+class UserLogin(BaseModel):
+    email: EmailStr
+    senha: constr(min_length=8, max_length=72)
+
+    class Config:
+        from_attributes = True
+
+
 class UserOut(BaseModel):
     id: int
     nome: str

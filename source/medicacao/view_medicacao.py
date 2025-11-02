@@ -3,7 +3,6 @@ View (Rotas) para Medicações - Endpoints REST para gerenciar medicações.
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 from config.database import get_db
 from source.usuario.view_usuario import get_current_user
 from .controller_medicacao import (
