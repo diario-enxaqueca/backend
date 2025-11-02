@@ -3,40 +3,16 @@ View (Rotas) para Gatilhos - Endpoints REST para gerenciar gatilhos.
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field, constr
 from config.database import get_db
 from source.usuario.view_usuario import get_current_user
 from .controller_gatilho import (
     create_gatilho, get_gatilhos_usuario, get_gatilho,
     update_gatilho, delete_gatilho, get_gatilho_by_nome
 )
-from datetime import datetime
+from .schemas_gatilho import GatilhoCreate, GatilhoOut, GatilhoUpdate
 
 router = APIRouter()
 
-# --- SCHEMAS ---
-
-
-class GatilhoCreate(BaseModel):
-    nome: constr(strip_whitespace=True,
-                 min_length=2, max_length=100) = Field(
-                     ..., description="Nome do gatilho "
-                     "(ex: Estresse, Chocolate, Café)", example="Estresse")
-
-
-class GatilhoOut(BaseModel):
-    id: int
-    nome: str
-    data_criacao: datetime
-
-    class Config:
-        from_attributes = True
-
-
-class GatilhoUpdate(BaseModel):
-    nome: constr(strip_whitespace=True,
-                 min_length=2, max_length=100) = Field(
-                     ..., description="Novo nome para o gatilho")
 
 # --- ROTAS ---
 
@@ -56,7 +32,6 @@ def criar_gatilho(
     - Nome deve ser único por usuário
     - Nome é case-sensitive e será salvo com espaços removidos
     """
-    # Verificar se já existe
     if get_gatilho_by_nome(db, user.id, data.nome):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -121,7 +96,6 @@ def editar_gatilho(
             detail="Gatilho não encontrado"
         )
 
-    # Verificar se o novo nome já existe em outro gatilho
     existing = get_gatilho_by_nome(db, user.id, data.nome)
     if existing and existing.id != gatilho_id:
         raise HTTPException(

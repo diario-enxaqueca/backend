@@ -1,11 +1,16 @@
 from sqlalchemy.orm import Session
+from typing import Optional, List
 from .model_episodio import Episodio
+from source.gatilho.model_gatilho import Gatilho
+from source.medicacao.model_medicacao import Medicacao
 
 
 def create_episodio(
         db: Session, usuario_id: int, data: str,
         intensidade: int, duracao: int = None,
-        observacoes: str = None):
+        observacoes: str = None,
+        gatilhos: Optional[List[int]] = None,
+        medicacoes: Optional[List[int]] = None):
     episodio = Episodio(
         usuario_id=usuario_id,
         data=data,
@@ -16,6 +21,15 @@ def create_episodio(
     db.add(episodio)
     db.commit()
     db.refresh(episodio)
+
+    if gatilhos:
+        gatilhos_objs = db.query(Gatilho).filter(Gatilho.id.in_(gatilhos)).all()
+        episodio.gatilhos.extend(gatilhos_objs)
+    if medicacoes:
+        medicacoes_objs = db.query(Medicacao).filter(Medicacao.id.in_(medicacoes)).all()
+        episodio.medicacoes.extend(medicacoes_objs)
+
+    db.commit()
     return episodio
 
 

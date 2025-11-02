@@ -5,6 +5,7 @@ from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy import ForeignKey, func, UniqueConstraint
 from sqlalchemy.orm import relationship
 from config.database import Base
+from source.episodio.model_episodio import episodio_gatilho
 
 
 class Gatilho(Base):
@@ -17,6 +18,8 @@ class Gatilho(Base):
 
     # Relacionamentos
     usuario = relationship("Usuario", backref="gatilhos")
+
+    episodios = relationship("Episodio", secondary=episodio_gatilho, back_populates="gatilhos")
 
     # Constraint: nome único por usuário
     __table_args__ = (

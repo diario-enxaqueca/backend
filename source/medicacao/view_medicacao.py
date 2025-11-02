@@ -30,7 +30,6 @@ def criar_medicacao(
     - Nome deve ser único por usuário
     - Dosagem é opcional
     """
-    # Verificar se já existe
     if get_medicacao_by_nome(db, user.id, data.nome):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

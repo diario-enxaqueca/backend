@@ -19,7 +19,7 @@ def create_gatilho(db: Session, usuario_id: int, nome: str):
         return None  # Gatilho duplicado para este usuário
 
 
-def get_gatilhos_usuario(db: Session, usuario_id: int):
+def get_gatilhos_usuario(db: Session, usuario_id: int) -> list[Gatilho]:
     """Lista todos os gatilhos de um usuário, ordenados alfabeticamente."""
     return (
         db.query(Gatilho)
@@ -29,7 +29,7 @@ def get_gatilhos_usuario(db: Session, usuario_id: int):
     )
 
 
-def get_gatilho(db: Session, gatilho_id: int, usuario_id: int):
+def get_gatilho(db: Session, gatilho_id: int, usuario_id: int) -> Gatilho | None:
     """Busca um gatilho específico do usuário."""
     return (
         db.query(Gatilho)
@@ -38,7 +38,7 @@ def get_gatilho(db: Session, gatilho_id: int, usuario_id: int):
     )
 
 
-def update_gatilho(db: Session, gatilho: Gatilho, nome: str):
+def update_gatilho(db: Session, gatilho: Gatilho, nome: str) -> Gatilho | None:
     """Atualiza o nome de um gatilho."""
     gatilho.nome = nome.strip()
     try:
@@ -50,7 +50,7 @@ def update_gatilho(db: Session, gatilho: Gatilho, nome: str):
         return None  # Nome duplicado
 
 
-def delete_gatilho(db: Session, gatilho: Gatilho):
+def delete_gatilho(db: Session, gatilho: Gatilho) -> None:
     """
     Deleta um gatilho.
     Nota: Associações com episódios são removidas automaticamente (ON DELETE CASCADE).
@@ -59,7 +59,7 @@ def delete_gatilho(db: Session, gatilho: Gatilho):
     db.commit()
 
 
-def get_gatilho_by_nome(db: Session, usuario_id: int, nome: str):
+def get_gatilho_by_nome(db: Session, usuario_id: int, nome: str) -> Gatilho | None:
     """Busca gatilho pelo nome (útil para validação de duplicatas)."""
     return (
         db.query(Gatilho)

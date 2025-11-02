@@ -6,7 +6,10 @@ from sqlalchemy.exc import IntegrityError
 from .model_medicacao import Medicacao
 
 
-def create_medicacao(db: Session, usuario_id: int, nome: str, dosagem: str = None):
+def create_medicacao(db: Session,
+                     usuario_id: int,
+                     nome: str,
+                     dosagem: str | None = None) -> Medicacao | None:
     """Cria uma nova medicação para o usuário."""
     medicacao = Medicacao(
         usuario_id=usuario_id,
@@ -23,7 +26,7 @@ def create_medicacao(db: Session, usuario_id: int, nome: str, dosagem: str = Non
         return None  # Medicação duplicada para este usuário
 
 
-def get_medicacoes_usuario(db: Session, usuario_id: int):
+def get_medicacoes_usuario(db: Session, usuario_id: int) -> list[Medicacao]:
     """Lista todas as medicações de um usuário, ordenadas alfabeticamente."""
     return (
         db.query(Medicacao)
@@ -33,7 +36,9 @@ def get_medicacoes_usuario(db: Session, usuario_id: int):
     )
 
 
-def get_medicacao(db: Session, medicacao_id: int, usuario_id: int):
+def get_medicacao(db: Session,
+                  medicacao_id: int,
+                  usuario_id: int) -> Medicacao | None:
     """Busca uma medicação específica do usuário."""
     return (
         db.query(Medicacao)
@@ -43,7 +48,8 @@ def get_medicacao(db: Session, medicacao_id: int, usuario_id: int):
 
 
 def update_medicacao(db, medicacao: Medicacao,
-                     nome: str = None, dosagem: str = None):
+                     nome: str | None = None, 
+                     dosagem: str | None = None) -> Medicacao | None:
     """Atualiza uma medicação."""
     if nome is not None:
         medicacao.nome = nome.strip()
@@ -63,7 +69,7 @@ def update_medicacao(db, medicacao: Medicacao,
         return None  # Nome duplicado ou erro
 
 
-def delete_medicacao(db: Session, medicacao: Medicacao):
+def delete_medicacao(db: Session, medicacao: Medicacao) -> None:
     """
     Deleta uma medicação.
     Nota: Associações com episódios são removidas automaticamente (ON DELETE CASCADE).
@@ -72,7 +78,8 @@ def delete_medicacao(db: Session, medicacao: Medicacao):
     db.commit()
 
 
-def get_medicacao_by_nome(db: Session, usuario_id: int, nome: str):
+def get_medicacao_by_nome(db: Session, 
+                          usuario_id: int, nome: str) -> Medicacao | None:
     """Busca medicação pelo nome (útil para validação de duplicatas)."""
     return (
         db.query(Medicacao)
