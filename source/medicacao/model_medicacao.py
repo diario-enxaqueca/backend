@@ -7,6 +7,7 @@ from sqlalchemy.orm import relationship
 from config.database import Base
 from source.episodio.model_episodio import episodio_medicacao
 
+
 class Medicacao(Base):
     __tablename__ = "medicacoes"
 
@@ -19,7 +20,9 @@ class Medicacao(Base):
     # Relacionamentos
     usuario = relationship("Usuario", backref="medicacoes")
 
-    episodios = relationship("Episodio", secondary=episodio_medicacao, back_populates="medicacoes")
+    episodios = relationship("Episodio",
+                             secondary=episodio_medicacao,
+                             back_populates="medicacoes")
 
     # Constraint: nome único por usuário
     __table_args__ = (

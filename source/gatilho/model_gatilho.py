@@ -19,7 +19,9 @@ class Gatilho(Base):
     # Relacionamentos
     usuario = relationship("Usuario", backref="gatilhos")
 
-    episodios = relationship("Episodio", secondary=episodio_gatilho, back_populates="gatilhos")
+    episodios = relationship("Episodio",
+                             secondary=episodio_gatilho,
+                             back_populates="gatilhos")
 
     # Constraint: nome único por usuário
     __table_args__ = (

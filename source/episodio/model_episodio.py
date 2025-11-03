@@ -33,5 +33,9 @@ class Episodio(Base):
     usuario = relationship("Usuario", backref="episodios")
     # relacionamentos com gatilhos/medicacoes são feitos via tabelas auxiliares
 
-    gatilhos = relationship("Gatilho", secondary=episodio_gatilho, back_populates="episodios")
-    medicacoes = relationship("Medicacao", secondary=episodio_medicacao, back_populates="episodios")
+    gatilhos = relationship("Gatilho",
+                            secondary=episodio_gatilho,
+                            back_populates="episodios")
+    medicacoes = relationship("Medicacao",
+                              secondary=episodio_medicacao,
+                              back_populates="episodios")

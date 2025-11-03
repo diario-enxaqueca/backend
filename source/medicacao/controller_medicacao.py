@@ -48,7 +48,7 @@ def get_medicacao(db: Session,
 
 
 def update_medicacao(db, medicacao: Medicacao,
-                     nome: str | None = None, 
+                     nome: str | None = None,
                      dosagem: str | None = None) -> Medicacao | None:
     """Atualiza uma medicação."""
     if nome is not None:
@@ -78,7 +78,7 @@ def delete_medicacao(db: Session, medicacao: Medicacao) -> None:
     db.commit()
 
 
-def get_medicacao_by_nome(db: Session, 
+def get_medicacao_by_nome(db: Session,
                           usuario_id: int, nome: str) -> Medicacao | None:
     """Busca medicação pelo nome (útil para validação de duplicatas)."""
     return (
