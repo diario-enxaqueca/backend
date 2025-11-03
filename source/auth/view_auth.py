@@ -8,8 +8,10 @@ from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from config.database import get_db
 from config.settings import settings
 from source.auth.controller_auth import (
-    get_user_by_email, create_user, authenticate_user, create_access_token)
-from source.auth.schemas_auth import UserCreate, UserLogin, UserOut, Token
+    get_user_by_email, create_user, authenticate_user,
+    verify_password, hash_password, create_access_token)
+from source.auth.schemas_auth import (
+    UserCreate, UserLogin, UserOut, Token, ChangePasswordRequest)
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -73,6 +75,30 @@ def login(form_data: UserLogin, db: Session = Depends(get_db)):
     token = create_access_token(data={"sub": user.email},
                                 expires_delta=access_token_expires)
     return {"access_token": token, "token_type": "bearer"}
+
+
+@router.post("/change-password", status_code=status.HTTP_200_OK, tags=["auth"])
+def change_password(
+    payload: ChangePasswordRequest,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Verifica se a senha atual está correta
+    if not verify_password(payload.current_password, current_user.senha_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Senha atual incorreta"
+        )
+
+    # Atualiza a senha com hash
+    new_hashed_password = hash_password(payload.new_password)
+    current_user.senha_hash = new_hashed_password
+
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+
+    return {"message": "Senha alterada com sucesso"}
 
 
 @router.get("/me", response_model=UserOut, tags=["auth"])

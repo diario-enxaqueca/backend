@@ -32,3 +32,11 @@ class UserOut(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: constr(min_length=8, max_length=72)
+    new_password: constr(min_length=8, max_length=72)
+
+    class Config:
+        from_attributes = True
