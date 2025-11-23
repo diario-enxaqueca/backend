@@ -1,4 +1,5 @@
-from typing import Optional, List
+from typing import Optional, List, Union
+from datetime import date
 
 from sqlalchemy.orm import Session
 
@@ -12,13 +13,17 @@ from .model_episodio import Episodio
 def create_episodio(
     db: Session,
     usuario_id: int,
-    data: str,
+    data: Union[str, date],
     intensidade: int,
     duracao: int = None,
     observacoes: str = None,
     gatilhos: Optional[List[int]] = None,
     medicacoes: Optional[List[int]] = None,
 ):
+    # Converter string para date se necessário
+    if isinstance(data, str):
+        data = date.fromisoformat(data)
+    
     episodio = Episodio(
         usuario_id=usuario_id,
         data=data,

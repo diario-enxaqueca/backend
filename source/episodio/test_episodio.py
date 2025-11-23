@@ -10,10 +10,11 @@ com uma sessão transacional (savepoint) para isolamento.
 
 import pytest
 import sqlalchemy as sa
+from datetime import date
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
-from config.database import DATABASE_URL
 from source.episodio.controller_episodio import (
     create_episodio,
     get_episodio,
@@ -23,8 +24,14 @@ from source.episodio.controller_episodio import (
 )
 from source.usuario.controller_usuario import create_usuario
 
+# Usar SQLite em memória para testes (não usar banco real)
+SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///:memory:"
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    SQLALCHEMY_TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
 TestingSessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
@@ -72,7 +79,7 @@ def test_create_get_delete_episodio(db):
     epi = create_episodio(
         db,
         user.id,
-        "2025-10-24",
+        date(2025, 10, 24),
         8,
         duracao=120,
         observacoes="obs",
@@ -102,7 +109,7 @@ def test_update_episodio_parametrized(db, field, value, expected):
     epi = create_episodio(
         db,
         user.id,
-        "2025-10-24",
+        date(2025, 10, 24),
         7,
         duracao=60,
         observacoes="orig",
@@ -116,7 +123,7 @@ def test_get_episodios_usuario_pagination(db):
     user = create_usuario(db, "Epi User3", "epi3@test.local", "Senha1")
     # criar 3 episódios
     for i in range(3):
-        create_episodio(db, user.id, f"2025-10-2{i}", intensidade=3 + i)
+        create_episodio(db, user.id, date(2025, 10, 20 + i), intensidade=3 + i)
 
     all_list = get_episodios_usuario(db, user.id)
     assert len(all_list) == 3
