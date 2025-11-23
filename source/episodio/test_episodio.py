@@ -8,9 +8,9 @@ com uma sessão transacional (savepoint) para isolamento.
 
 # pylint: disable=invalid-name,redefined-outer-name,import-outside-toplevel
 
+from datetime import date
 import pytest
 import sqlalchemy as sa
-from datetime import date
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool

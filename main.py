@@ -4,7 +4,8 @@ Ponto de entrada da aplicação FastAPI - Diário de Enxaqueca.
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
+from sqlalchemy import text
 from config.settings import settings
 from config.database import Base, engine
 
@@ -62,18 +63,44 @@ app.include_router(medicacao_router, prefix="/api/medicacoes",
 
 @app.on_event("startup")
 def startup_event():
-    """Cria tabelas ao iniciar (se não existirem).
-    
-    create_all() usa CREATE TABLE IF NOT EXISTS, então:
-    - Não apaga dados existentes
-    - Garante que tabelas existam em qualquer restart
-    - init.sql ainda é responsável pelos INSERTs iniciais
+    """Verifica existência das tabelas e cria somente as ausentes.
+
+    Também loga contagem de registros para diagnosticar perda de dados.
     """
     try:
-        Base.metadata.create_all(bind=engine)
-        logger.info("Tabelas backend verificadas/criadas")
+        with engine.connect() as conn:
+            # Verificar se tabela principal já existe
+            result = conn.execute(
+                text(
+                    "SELECT COUNT(*) FROM information_schema.tables "
+                    "WHERE table_schema = :db AND table_name = 'usuarios'"
+                ),
+                {"db": settings.MYSQL_DB},
+            ).scalar()
+            if result == 0:
+                # Nenhuma tabela 'usuarios' -> cria todas as definidas
+                Base.metadata.create_all(bind=conn)
+                logger.info(
+                    "Tabelas backend criadas (usuarios ausente)"
+                )
+            else:
+                logger.info("Tabela usuarios já existe; pulando create_all")
+
+            # Logar contagem de linhas para diagnóstico
+            for tbl in ["usuarios", "episodios", "gatilhos", "medicacoes"]:
+                try:
+                    count = conn.execute(
+                        text(f"SELECT COUNT(*) FROM {tbl}")
+                    ).scalar()
+                    logger.info("Tabela %s possui %d registros", tbl, count)
+                except SQLAlchemyError as inner_exc:
+                    logger.warning(
+                        "Falha ao contar registros em %s: %s",
+                        tbl,
+                        inner_exc,
+                    )
     except OperationalError as exc:
-        logger.error("Erro ao criar tabelas: %s", exc)
+        logger.error("Erro ao verificar/criar tabelas: %s", exc)
 
 
 @app.get("/")

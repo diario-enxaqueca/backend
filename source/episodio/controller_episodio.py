@@ -23,7 +23,7 @@ def create_episodio(
     # Converter string para date se necessário
     if isinstance(data, str):
         data = date.fromisoformat(data)
-    
+
     episodio = Episodio(
         usuario_id=usuario_id,
         data=data,
