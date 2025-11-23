@@ -1,16 +1,24 @@
-from sqlalchemy.orm import Session
 from typing import Optional, List
-from .model_episodio import Episodio
+
+from sqlalchemy.orm import Session
+
 from source.gatilho.model_gatilho import Gatilho
 from source.medicacao.model_medicacao import Medicacao
 
+from .model_episodio import Episodio
 
+
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 def create_episodio(
-        db: Session, usuario_id: int, data: str,
-        intensidade: int, duracao: int = None,
-        observacoes: str = None,
-        gatilhos: Optional[List[int]] = None,
-        medicacoes: Optional[List[int]] = None):
+    db: Session,
+    usuario_id: int,
+    data: str,
+    intensidade: int,
+    duracao: int = None,
+    observacoes: str = None,
+    gatilhos: Optional[List[int]] = None,
+    medicacoes: Optional[List[int]] = None,
+):
     episodio = Episodio(
         usuario_id=usuario_id,
         data=data,
@@ -23,17 +31,30 @@ def create_episodio(
     db.refresh(episodio)
 
     if gatilhos:
-        gatilhos_objs = db.query(Gatilho).filter(Gatilho.id.in_(gatilhos)).all()
+        gatilhos_objs = (
+            db.query(Gatilho)
+            .filter(Gatilho.id.in_(gatilhos))
+            .all()
+        )
         episodio.gatilhos.extend(gatilhos_objs)
     if medicacoes:
-        medicacoes_objs = db.query(Medicacao).filter(Medicacao.id.in_(medicacoes)).all()
+        medicacoes_objs = (
+            db.query(Medicacao)
+            .filter(Medicacao.id.in_(medicacoes))
+            .all()
+        )
         episodio.medicacoes.extend(medicacoes_objs)
 
     db.commit()
     return episodio
 
 
-def get_episodios_usuario(db: Session, usuario_id: int, skip: int = 0, limit: int = 10):
+def get_episodios_usuario(
+    db: Session,
+    usuario_id: int,
+    skip: int = 0,
+    limit: int = 10,
+):
     return (
         db.query(Episodio)
         .filter(Episodio.usuario_id == usuario_id)

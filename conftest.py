@@ -1,18 +1,18 @@
 """
 Fixtures globais e configuração de testes.
 """
+# Nota: testes usam padrões diferentes (fixtures, imports locais).
+# pylint: disable=redefined-outer-name, import-outside-toplevel
+# pylint: disable=unused-argument, invalid-name, import-error
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-import sys
-import os
+
 from config.database import Base, get_db
 from main import app
-
-# Adicionar diretório raiz ao path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # URL do banco de testes (SQLite em memória)
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -25,7 +25,11 @@ engine = create_engine(
 )
 
 # Session de teste
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+)
 
 
 @pytest.fixture(scope="function")
@@ -62,27 +66,29 @@ def client(db):
 
 
 @pytest.fixture
-def usuario_teste(client):
-    """
-    Fixture que cria um usuário de teste via API no serviço de autenticação.
-    Nota: Senha com tamanho entre 8 e 72 caracteres (limite bcrypt).
-    """
+def usuario_teste(db):
+    # Usuário mockado para endpoints que precisam de um usuário
     dados = {
         "nome": "Usuario Teste",
         "email": "teste_usuario@email.com",
-        "senha": "senha12345"
+        "senha": "senha12345",
     }
 
-    response = client.post("/api/auth/register", json=dados)
+    # Cria usuário direto no DB para evitar dependência do serviço de auth
+    from source.usuario.model_usuario import Usuario
+    from source.usuario.controller_usuario import hash_password
 
-    if response.status_code != 201:
-        print("❌ Erro ao criar usuário teste:")
-        print(f"Status: {response.status_code}")
-        print(f"Response: {response.json()}")
-        pytest.fail(f"Falha ao criar usuário teste: {response.json()}")
+    usuario = Usuario(
+        nome=dados["nome"],
+        email=dados["email"],
+        senha_hash=hash_password(dados["senha"]),
+    )
+    db.add(usuario)
+    db.commit()
+    db.refresh(usuario)
 
     return {
-        "id": response.json().get("id"),
+        "id": usuario.id,
         "nome": dados["nome"],
         "email": dados["email"],
         "senha": dados["senha"],
@@ -93,19 +99,16 @@ def usuario_teste(client):
 def auth_token(client, usuario_teste):
     """Fixture que retorna token JWT válido para usuário de teste."""
 
-    response = client.post("/api/auth/login", json={
-        "nome": usuario_teste["nome"],
-        "email": usuario_teste["email"],
-        "senha": usuario_teste["senha"]
-    })
+    # Gera token JWT localmente sem passar pelo endpoint de login
+    from config.settings import settings
+    from jose import jwt
 
-    if response.status_code != 200:
-        print("❌ Erro no login:")
-        print(f"Status: {response.status_code}")
-        print(f"Response: {response.json()}")
-        pytest.fail(f"Falha no login: {response.json()}")
-
-    return response.json().get("access_token")
+    token = jwt.encode(
+        {"sub": usuario_teste["email"]},
+        settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM,
+    )
+    return token
 
 
 @pytest.fixture

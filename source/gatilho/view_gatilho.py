@@ -132,4 +132,4 @@ def excluir_gatilho(
             detail="Gatilho não encontrado"
         )
     delete_gatilho(db, gatilho)
-    return None
+    # endpoint retorna 204 No Content quando excluído com sucesso

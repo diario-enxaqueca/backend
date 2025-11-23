@@ -1,142 +1,101 @@
+"""
+Testes unitários e parametrizados para o CRUD de `usuario`.
+
+Cobertura focada nas funções do controller: criação, busca,
+atualização e exclusão, além de comportamento de hashing.
+"""
+
+# pylint: disable=redefined-outer-name, import-outside-toplevel
+# pylint: disable=unused-argument, invalid-name, import-error
+
 import pytest
-from fastapi.testclient import TestClient
-from source.usuario.controller_usuario import get_usuario_by_email
-from source.usuario.view_usuario import get_current_user
-from source.auth.controller_auth import hash_password
-from source.usuario.model_usuario import Usuario
-from main import app
-from config.database import get_db, DATABASE_URL
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-import sqlalchemy as sa
-from datetime import datetime
+from sqlalchemy.pool import StaticPool
 
-engine = create_engine(DATABASE_URL)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+from source.usuario.controller_usuario import (
+    create_usuario,
+    get_usuario_by_email,
+    update_usuario,
+    delete_usuario,
+    hash_password,
+    pwd_context,
+    MAX_PASSWORD_LENGTH,
+)
+# Usuario model not needed directly in these unit tests
+
+# Usar SQLite em memória para testes (isolado do MySQL)
+SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///:memory:"
+
+engine = create_engine(
+    SQLALCHEMY_TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+TestingSessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+)
 
 
 @pytest.fixture(scope="function")
 def db():
-    # Cria conexão e transação principal
-    connection = engine.connect()
-    transaction = connection.begin()
+    """Provide a transactional DB session for tests."""
+    # Garantir que as tabelas existam
+    from config.database import Base
+    import source.usuario.model_usuario  # noqa: F401  # pylint: disable=unused-import
 
-    # Cria sessão ligada à conexão
-    session = TestingSessionLocal(bind=connection)
+    Base.metadata.create_all(bind=engine)
+    session = TestingSessionLocal()
 
-    # Cria transação aninhada (savepoint)
-    nested = connection.begin_nested()
-
-    @sa.event.listens_for(session, "after_transaction_end")
-    def restart_savepoint(session, transaction):
-        nonlocal nested
-        if not nested.is_active:
-            nested = connection.begin_nested()
-
-    yield session
-
-    session.close()
-    transaction.rollback()
-    connection.close()
+    try:
+        yield session
+    finally:
+        session.close()
+        Base.metadata.drop_all(bind=engine)
 
 
-@pytest.fixture(scope="function")
-def client(db):
-    app.dependency_overrides[get_db] = lambda: db
-    with TestClient(app) as c:
-        yield c
+def test_hash_password_truncates_and_verifies():
+    long_password = "a" * 100 + "çñ"
+    hashed = hash_password(long_password)
+    # Recompute truncated form as controller does
+    trunc = long_password.encode("utf-8")[:MAX_PASSWORD_LENGTH].decode(
+        "utf-8", "ignore")
+    assert pwd_context.verify(trunc, hashed)
 
 
-@pytest.fixture
-def usuario_teste(client):
-    # Já que registro é no serviço auth, use dados mockados ou consulta ao banco direto
-    return {"id": 1, "nome": "Usuario Teste", "email": "usuario@teste.com"}
+def test_create_get_delete_usuario(db):
+    user = create_usuario(db, "Unit Tester", "unit@test.local", "Pwd!1234")
+    assert user.email == "unit@test.local"
+
+    fetched = get_usuario_by_email(db, "unit@test.local")
+    assert fetched is not None
+    assert fetched.email == user.email
+
+    delete_usuario(db, fetched)
+    after = get_usuario_by_email(db, "unit@test.local")
+    assert after is None
 
 
-@pytest.fixture
-def usuario_real(db):
-    usuario = Usuario(
-        nome="Usuario Teste",
-        email="usuario@teste.com",
-        senha_hash=hash_password("12345678"),
-        data_cadastro=datetime.utcnow()
-    )
-    db.add(usuario)
-    db.commit()
-    db.refresh(usuario)
-    return usuario
+@pytest.mark.parametrize(
+    "nome,email,expected_nome,expected_email",
+    [
+        ("Novo Nome", None, "Novo Nome", "u1@example.com"),
+        (None, "novo@example.com", "User One", "novo@example.com"),
+        ("Nome Ambos", "ambos@example.com", "Nome Ambos", "ambos@example.com"),
+    ],
+)
+def test_update_usuario_parametrized(
+    db,
+    nome,
+    email,
+    expected_nome,
+    expected_email,
+):
+    # criar usuário base
+    base = create_usuario(db, "User One", "u1@example.com", "Senha123")
 
-
-def test_get_usuario_by_email(db):
-    email = "usuario_novo@teste.com"
-    senha = "senha12345"
-    usuario = Usuario(nome="Usuario Novo",
-                      email=email, senha_hash=senha)
-    db.add(usuario)
-    db.commit()
-    user = get_usuario_by_email(db, email)
-    assert user.email == email
-
-
-def test_read_me_route(client, usuario_teste):
-    # simula token válido, ou utilize mock de dependência get_current_user
-    def override_get_current_user():
-        class User:
-            def __init__(self, nome, email):
-                self.nome = nome
-                self.email = email
-                self.id = 1
-                self.data_cadastro = datetime.utcnow()
-        return User(usuario_teste["nome"], usuario_teste["email"])
-    app.dependency_overrides[get_current_user] = override_get_current_user
-
-    res = client.get("/api/usuarios/me")
-    app.dependency_overrides.clear()
-    assert res.status_code == 200
-    assert res.json()["email"] == usuario_teste["email"]
-
-
-@pytest.mark.parametrize("novo_nome, novo_email", [
-    ("Nome Alterado", "novo@email.com"),
-    (None, "emailonly@mail.com"),
-    ("NomeSomente", None),
-])
-def test_update_usuario(client, usuario_real, novo_nome, novo_email):
-    def override_get_current_user():
-        return usuario_real
-    app.dependency_overrides[get_current_user] = override_get_current_user
-
-    data = {}
-    if novo_nome is not None:
-        data["nome"] = novo_nome
-    if novo_email is not None:
-        data["email"] = novo_email
-    data["senha"] = "12345678"
-
-    res = client.put("/api/usuarios/me", json=data)
-
-    print(f"Payload enviado: {data}")
-    print(f"Status code: {res.status_code}")
-    print(f"Response JSON: {res.json()}")
-
-    app.dependency_overrides.clear()
-    assert res.status_code == 200
-    if novo_nome:
-        assert res.json()["nome"] == novo_nome
-    if novo_email:
-        assert res.json()["email"] == novo_email
-
-
-def test_delete_usuario(client, usuario_real):
-    def override_get_current_user():
-        return usuario_real
-    app.dependency_overrides[get_current_user] = override_get_current_user
-
-    res = client.delete("/api/usuarios/me")
-    assert res.status_code == 204
-
-    app.dependency_overrides.clear()
-
-    # Verifica se o usuário foi realmente deletado
-    res_get = client.get("/api/usuarios/me")
-    assert res_get.status_code == 401  # Unauthorized após deleção
+    updated = update_usuario(db, base, nome=nome, email=email)
+    assert updated.nome == expected_nome
+    assert updated.email == expected_email

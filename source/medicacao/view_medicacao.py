@@ -5,11 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from config.database import get_db
 from source.usuario.view_usuario import get_current_user
-from .controller_medicacao import (
-    create_medicacao, get_medicacoes_usuario, get_medicacao,
-    delete_medicacao, get_medicacao_by_nome, update_medicacao)
 from source.medicacao.schemas_medicacao import (
     MedicacaoCreate, MedicacaoOut, MedicacaoUpdate)
+from .controller_medicacao import (
+    create_medicacao, get_medicacoes_usuario, get_medicacao,
+    delete_medicacao, get_medicacao_by_nome, update_medicacao,
+)
 
 router = APIRouter()
 
@@ -58,7 +59,9 @@ def listar_medicacoes(
     return get_medicacoes_usuario(db, usuario_id=user.id)
 
 
-@router.get("/{medicacao_id}", response_model=MedicacaoOut, tags=["Medicações"])
+@router.get(
+    "/{medicacao_id}", response_model=MedicacaoOut, tags=["Medicações"]
+)
 def ver_medicacao(
     medicacao_id: int,
     db: Session = Depends(get_db),
@@ -76,7 +79,9 @@ def ver_medicacao(
     return medicacao
 
 
-@router.put("/{medicacao_id}", response_model=MedicacaoOut, tags=["Medicações"])
+@router.put(
+    "/{medicacao_id}", response_model=MedicacaoOut, tags=["Medicações"]
+)
 def editar_medicacao(
     medicacao_id: int,
     data: MedicacaoUpdate,
@@ -130,4 +135,4 @@ def excluir_medicacao(
             detail="Medicação não encontrada"
         )
     delete_medicacao(db, medicacao)
-    return None
+    # Retorna 204 No Content quando excluído com sucesso

@@ -21,6 +21,7 @@ engine = create_engine(
 )
 
 # SessionLocal para criar sessões do banco
+# pylint: disable=invalid-name
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Base para os models

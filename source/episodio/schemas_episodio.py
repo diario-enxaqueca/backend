@@ -1,16 +1,26 @@
-from pydantic import BaseModel, Field, conint, constr, validator
+from __future__ import annotations
+
 from typing import Optional, List
 from datetime import date, datetime
+
+from pydantic import BaseModel, Field, validator
+
+# pylint: disable=too-few-public-methods
 
 
 class EpisodioCreate(BaseModel):
     data: date = Field(..., description="Data do episódio (YYYY-MM-DD)")
-    intensidade: conint(ge=0, le=10) = Field(
-        ..., description="Intensidade,0=leve,10=extrema")
+    intensidade: int = Field(
+        ..., ge=0, le=10, description="Intensidade,0=leve,10=extrema"
+    )
     duracao: int = Field(None, description="Duração em minutos")
-    observacoes: constr(strip_whitespace=True, max_length=500) = None
-    gatilhos: Optional[List[int]] = []           # IDs dos gatilhos
-    medicacoes: Optional[List[int]] = []         # IDs das medicações
+    observacoes: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Observações do episódio",
+    )
+    gatilhos: Optional[List[int]] = []  # IDs dos gatilhos
+    medicacoes: Optional[List[int]] = []  # IDs das medicações
 
 
 class EpisodioOut(BaseModel):
@@ -23,6 +33,7 @@ class EpisodioOut(BaseModel):
     data_atualizacao: date
 
     @validator("data_criacao", "data_atualizacao", pre=True)
+    # pylint: disable=no-self-argument
     def convert_datetime_to_date(cls, value):
         if isinstance(value, datetime):
             return value.date()
@@ -30,3 +41,4 @@ class EpisodioOut(BaseModel):
 
     class Config:
         from_attributes = True
+    # pylint: disable=too-few-public-methods

@@ -1,45 +1,52 @@
-"""
-Testes para o módulo Medicação.
-"""
+"""Testes para o módulo Medicação."""
+
+# pylint: disable=redefined-outer-name,import-outside-toplevel
+
 import pytest
 from fastapi.testclient import TestClient
 from main import app
-from config.database import get_db, DATABASE_URL
-import sqlalchemy as sa
+from config.database import get_db
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.exc import IntegrityError
 from source.medicacao.controller_medicacao import update_medicacao
 from source.medicacao.model_medicacao import Medicacao
 
 
-engine = create_engine(DATABASE_URL)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Usar SQLite em memória para testes (isolado do MySQL)
+SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///:memory:"
+
+engine = create_engine(
+    SQLALCHEMY_TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+testing_session_local = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+)
 
 
 @pytest.fixture(scope="function")
 def db():
-    # Cria conexão e transação principal
-    connection = engine.connect()
-    transaction = connection.begin()
+    """Cria um banco de dados limpo para cada teste."""
+    # Garantir que as tabelas existam
+    from config.database import Base
+    import source.usuario.model_usuario  # pylint: disable=unused-import
+    import source.medicacao.model_medicacao  # pylint: disable=unused-import
+    import source.episodio.model_episodio  # pylint: disable=unused-import
+    # Imports necessários para criar tabelas; ignorar se não usados diretamente
+    import source.gatilho.model_gatilho  # noqa: F401  # pylint: disable=unused-import
 
-    # Cria sessão ligada à conexão
-    session = TestingSessionLocal(bind=connection)
-
-    # Cria transação aninhada (savepoint)
-    nested = connection.begin_nested()
-
-    @sa.event.listens_for(session, "after_transaction_end")
-    def restart_savepoint(session, transaction):
-        nonlocal nested
-        if not nested.is_active:
-            nested = connection.begin_nested()
-
-    yield session
-
-    session.close()
-    transaction.rollback()
-    connection.close()
+    Base.metadata.create_all(bind=engine)
+    db_session = testing_session_local()
+    try:
+        yield db_session
+    finally:
+        db_session.close()
+        Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture(scope="function")
@@ -50,24 +57,30 @@ def client(db):
 
 
 @pytest.fixture
-def auth_header(client):
-    # Registrar usuário
-    register_resp = client.post("/api/auth/register", json={
-        "nome": "Med Tester",
-        "email": "medicacao@test.com",
-        "senha": "senha12345"
-    })
-    assert register_resp.status_code == 201
+def auth_header(db, client):
+    """Cria usuário e retorna header de autenticação."""
+    # Criar usuário diretamente no banco
+    from source.usuario.model_usuario import Usuario
+    from source.usuario.controller_usuario import hash_password
 
-    # Login para obter token
-    login_resp = client.post(
-        "/api/auth/login",
-        json={"nome": "Med Tester",
-              "email": "medicacao@test.com",
-              "senha": "senha12345"})
-    assert login_resp.status_code == 200
-    token = login_resp.json().get("access_token")
-    assert token is not None
+    usuario = Usuario(
+        nome="Med Tester",
+        email="medicacao@test.com",
+        senha_hash=hash_password("senha12345"),
+    )
+    db.add(usuario)
+    db.commit()
+    db.refresh(usuario)
+
+    # Gerar token JWT
+    from config.settings import settings
+    from jose import jwt
+
+    token = jwt.encode(
+        {"sub": usuario.email},
+        settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM,
+    )
     return {"Authorization": f"Bearer {token}"}
 
 
@@ -100,35 +113,40 @@ def test_crud_medicacao_completo(auth_header, client):
     assert len(response.json()) >= 2
 
     # 4. Ver medicação específica
-    response = client.get(f"/api/medicacoes/{medicacao_id}", headers=auth_header)
+    url = f"/api/medicacoes/{medicacao_id}"
+    response = client.get(url, headers=auth_header)
     assert response.status_code == 200
     assert response.json()["nome"] == "Paracetamol"
 
     # 5. Editar medicação (nome e dosagem)
+    url = f"/api/medicacoes/{medicacao_id}"
     response = client.put(
-        f"/api/medicacoes/{medicacao_id}",
+        url,
         json={"nome": "Paracetamol Extra", "dosagem": "750mg"},
-        headers=auth_header
+        headers=auth_header,
     )
     assert response.status_code == 200
     assert response.json()["nome"] == "Paracetamol Extra"
     assert response.json()["dosagem"] == "750mg"
 
     # 6. Editar apenas dosagem
+    url = f"/api/medicacoes/{medicacao_id}"
     response = client.put(
-        f"/api/medicacoes/{medicacao_id}",
+        url,
         json={"dosagem": "1000mg"},
-        headers=auth_header
+        headers=auth_header,
     )
     assert response.status_code == 200
     assert response.json()["dosagem"] == "1000mg"
 
     # 7. Excluir medicação
-    response = client.delete(f"/api/medicacoes/{medicacao_id}", headers=auth_header)
+    url = f"/api/medicacoes/{medicacao_id}"
+    response = client.delete(url, headers=auth_header)
     assert response.status_code == 204
 
     # 8. Verificar exclusão
-    response = client.get(f"/api/medicacoes/{medicacao_id}", headers=auth_header)
+    url = f"/api/medicacoes/{medicacao_id}"
+    response = client.get(url, headers=auth_header)
     assert response.status_code == 404
 
 
@@ -153,11 +171,14 @@ def test_medicacao_duplicada(auth_header, client):
     assert "já cadastrada" in response.json()["detail"].lower()
 
 
-@pytest.mark.parametrize("dados_invalidos,campo_erro", [
-    ({"nome": "A", "dosagem": "500mg"}, "nome"),  # Nome muito curto
-    ({"nome": "X" * 101, "dosagem": "500mg"}, "nome"),  # Nome muito longo
-    ({"nome": "Paracetamol", "dosagem": "X" * 101}, "dosagem"),  # Dosagem muito longa
-])
+@pytest.mark.parametrize(
+    "dados_invalidos,campo_erro",
+    [
+        ({"nome": "A", "dosagem": "500mg"}, "nome"),  # Nome curto
+        ({"nome": "X" * 101, "dosagem": "500mg"}, "nome"),  # Nome longo
+        ({"nome": "Paracetamol", "dosagem": "X" * 101}, "dosagem"),  # Dosagem longa
+    ],
+)
 def test_validacao_campos(auth_header, client, dados_invalidos, campo_erro):
     """Testa validação de campos."""
     response = client.post(
@@ -218,11 +239,14 @@ def test_medicacao_sem_dosagem(auth_header, client):
     assert response.json()["dosagem"] is None
 
 
-@pytest.mark.parametrize("novo_nome, nova_dosagem, esperado_nome, esperado_dosagem", [
-    ("Novo Nome", "100mg", "Novo Nome", "100mg"),      # atualização normal
-    (None, None, "Original", None),                  # sem alteração
-    ("Nome Atualizado", None, "Nome Atualizado", None)  # altera nome, remove dosagem
-])
+@pytest.mark.parametrize(
+    "novo_nome,nova_dosagem,esperado_nome,esperado_dosagem",
+    [
+        ("Novo Nome", "100mg", "Novo Nome", "100mg"),  # atualização normal
+        (None, None, "Original", None),  # sem alteração
+        ("Nome Atualizado", None, "Nome Atualizado", None),  # altera nome, remove dosagem
+    ],
+)
 def test_update_medicacao_parametrizado(db, novo_nome, nova_dosagem,
                                         esperado_nome, esperado_dosagem):
     # Cria medicação inicial

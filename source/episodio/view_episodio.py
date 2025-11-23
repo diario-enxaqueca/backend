@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+
 from config.database import get_db
+from source.episodio.schemas_episodio import EpisodioCreate, EpisodioOut
 from source.usuario.view_usuario import get_current_user  # reusa autenticação
+
 from .controller_episodio import (
     create_episodio, get_episodios_usuario, get_episodio,
-    update_episodio, delete_episodio
+    update_episodio, delete_episodio,
 )
-from source.episodio.schemas_episodio import EpisodioCreate, EpisodioOut
 
 router = APIRouter()
 
@@ -24,11 +26,15 @@ def criar_episodio(ep: EpisodioCreate,
 
 
 @router.get("/", response_model=list[EpisodioOut], tags=["Episódios"])
-def listar_episodios(skip: int = 0,
-                     limit: int = Query(10, le=100),
-                     db: Session = Depends(get_db),
-                     user=Depends(get_current_user)):
-    return get_episodios_usuario(db, usuario_id=user.id, skip=skip, limit=limit)
+def listar_episodios(
+    skip: int = 0,
+    limit: int = Query(10, le=100),
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    return get_episodios_usuario(
+        db, usuario_id=user.id, skip=skip, limit=limit
+    )
 
 
 @router.get("/{episodio_id}", response_model=EpisodioOut, tags=["Episódios"])

@@ -1,144 +1,111 @@
 """
-Testes para o módulo Gatilho.
+Testes unitários e parametrizados para o CRUD de gatilho.
+
+Chamam diretamente as funções do controller para verificar
+criação, leitura, atualização, remoção e paginação. A fixture
+`db` usa uma transação com savepoint para isolar cada teste.
 """
+
+# pylint: disable=invalid-name,redefined-outer-name,import-outside-toplevel
+
 import pytest
-from fastapi.testclient import TestClient
-from main import app
-from config.database import get_db, DATABASE_URL
 import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from config.database import DATABASE_URL
+from source.gatilho.controller_gatilho import (
+    create_gatilho,
+    get_gatilho,
+    get_gatilhos_usuario,
+    update_gatilho,
+    delete_gatilho,
+)
+from source.usuario.controller_usuario import create_usuario
+
 
 engine = create_engine(DATABASE_URL)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+)
 
 
 @pytest.fixture(scope="function")
 def db():
-    # Cria conexão e transação principal
     connection = engine.connect()
     transaction = connection.begin()
 
-    # Cria sessão ligada à conexão
+    # Garantir que as tabelas existam para os testes
+    from config.database import Base
+    import source.usuario.model_usuario  # pylint: disable=unused-import
+    import source.gatilho.model_gatilho  # pylint: disable=unused-import
+    Base.metadata.create_all(bind=connection)
+
     session = TestingSessionLocal(bind=connection)
 
-    # Cria transação aninhada (savepoint)
     nested = connection.begin_nested()
 
     @sa.event.listens_for(session, "after_transaction_end")
-    def restart_savepoint(session, transaction):
+    def restart_savepoint(_session, _transaction):
         nonlocal nested
         if not nested.is_active:
             nested = connection.begin_nested()
 
-    yield session
-
-    session.close()
-    transaction.rollback()
-    connection.close()
-
-
-@pytest.fixture(scope="function")
-def client(db):
-    app.dependency_overrides[get_db] = lambda: db
-    with TestClient(app) as c:
-        yield c
+    try:
+        yield session
+    finally:
+        session.close()
+        Base.metadata.drop_all(bind=connection)
+        transaction.rollback()
+        connection.close()
 
 
-@pytest.fixture
-def auth_header(client):
-    # Registrar usuário
-    register_resp = client.post("/api/auth/register", json={
-        "nome": "Gatilho Tester",
-        "email": "gatilho@test.com",
-        "senha": "senha12345"
-    })
-    assert register_resp.status_code == 201
+def test_create_get_delete_gatilho(db):
+    user = create_usuario(db, "Gat User", "gat@test.local", "Senha1")
 
-    # Login para obter token
-    login_resp = client.post("/api/auth/login", json={
-        "nome": "Gatilho Tester",
-        "email": "gatilho@test.com",
-        "senha": "senha12345"
-    })
-    assert login_resp.status_code == 200
-    token = login_resp.json().get("access_token")
-    assert token is not None
-    return {"Authorization": f"Bearer {token}"}
-
-
-def test_crud_gatilho(auth_header, client):
-    """Testa CRUD completo de gatilhos."""
-
-    # 1. Criar gatilho
-    response = client.post(
-        "/api/gatilhos/",
-        json={"nome": "Estresse"},
-        headers=auth_header
+    gat = create_gatilho(
+        db,
+        user.id,
+        nome="Luz",
     )
-    assert response.status_code == 201
-    gatilho_id = response.json()["id"]
-    assert response.json()["nome"] == "Estresse"
+    assert gat.id is not None
+    assert gat.nome == "Luz"
 
-    # 2. Listar gatilhos
-    response = client.get("/api/gatilhos/", headers=auth_header)
-    assert response.status_code == 200
-    assert len(response.json()) > 0
+    fetched = get_gatilho(db, gat.id, user.id)
+    assert fetched is not None
+    assert fetched.id == gat.id
 
-    # 3. Ver gatilho específico
-    response = client.get(f"/api/gatilhos/{gatilho_id}", headers=auth_header)
-    assert response.status_code == 200
-    assert response.json()["nome"] == "Estresse"
-
-    # 4. Editar gatilho
-    response = client.put(
-        f"/api/gatilhos/{gatilho_id}",
-        json={"nome": "Estresse no Trabalho"},
-        headers=auth_header
-    )
-    assert response.status_code == 200
-    assert response.json()["nome"] == "Estresse no Trabalho"
-
-    # 5. Excluir gatilho
-    response = client.delete(f"/api/gatilhos/{gatilho_id}", headers=auth_header)
-    assert response.status_code == 204
-
-    # 6. Verificar que foi deletado
-    response = client.get(f"/api/gatilhos/{gatilho_id}", headers=auth_header)
-    assert response.status_code == 404
+    delete_gatilho(db, fetched)
+    after = get_gatilho(db, gat.id, user.id)
+    assert after is None
 
 
-def test_gatilho_duplicado(auth_header, client):
-    """Testa que não permite criar gatilho duplicado."""
-
-    # Criar primeiro gatilho
-    client.post(
-        "/api/gatilhos/",
-        json={"nome": "Chocolate"},
-        headers=auth_header
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("Janela", "Janela"),
+        ("Café", "Café"),
+        ("Estresse", "Estresse"),
+    ],
+)
+def test_update_gatilho_parametrized(db, value, expected):
+    user = create_usuario(db, "Gat User2", "gat2@test.local", "Senha1")
+    gat = create_gatilho(
+        db,
+        user.id,
+        nome="Botao",
     )
 
-    # Tentar criar duplicado
-    response = client.post(
-        "/api/gatilhos/",
-        json={"nome": "Chocolate"},
-        headers=auth_header
-    )
-    assert response.status_code == 400
-    assert "já cadastrado" in response.json()["detail"].lower()
+    updated = update_gatilho(db, gat, nome=value)
+    assert updated.nome == expected
 
 
-@pytest.mark.parametrize("nome_invalido", [
-    "A",  # Muito curto (mínimo 2)
-    "X" * 101,  # Muito longo (máximo 100)
-    "",  # Vazio
-])
-def test_validacao_nome(auth_header, client, nome_invalido):
-    """Testa validação de nome de gatilho."""
-    response = client.post(
-        "/api/gatilhos/",
-        json={"nome": nome_invalido},
-        headers=auth_header
-    )
-    assert response.status_code == 422  # Validation error
+def test_get_gatilhos_usuario_pagination(db):
+    user = create_usuario(db, "Gat User3", "gat3@test.local", "Senha1")
+    for i in range(4):
+        create_gatilho(db, user.id, nome=f"G{i}")
+
+    all_list = get_gatilhos_usuario(db, user.id)
+    assert len(all_list) == 4

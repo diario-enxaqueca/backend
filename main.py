@@ -10,7 +10,8 @@ from source.usuario.view_usuario import router as usuario_router
 from source.episodio.view_episodio import router as episodio_router
 from source.gatilho.view_gatilho import router as gatilho_router
 from source.medicacao.view_medicacao import router as medicacao_router
-from source.auth.view_auth import router as auth_router
+# Autenticação movida para repositório separado `autenticacao`
+# import do auth removido localmente
 
 # Criar instância do FastAPI
 app = FastAPI(
@@ -40,7 +41,7 @@ app.include_router(usuario_router, prefix="/api/usuarios", tags=["Usuários"])
 app.include_router(episodio_router, prefix="/api/episodios", tags=["Episódios"])
 app.include_router(gatilho_router, prefix="/api/gatilhos", tags=["Gatilhos"])
 app.include_router(medicacao_router, prefix="/api/medicacoes", tags=["Medicações"])
-app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
+# rotas de autenticação ficam em serviço separado
 
 
 @app.get("/")

@@ -1,5 +1,7 @@
-from pydantic import BaseModel, Field, constr
 from datetime import datetime
+from pydantic import BaseModel, Field, constr
+
+# pylint: disable=too-few-public-methods
 
 # --- SCHEMAS ---
 

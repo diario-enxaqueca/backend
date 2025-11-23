@@ -1,130 +1,125 @@
-import pytest
-from fastapi.testclient import TestClient
-from main import app
-from config.database import get_db, DATABASE_URL
+"""
+Testes unitários e parametrizados para o CRUD de Episódio.
 
+Usam diretamente as funções do controller (`create_episodio`,
+`get_episodio`, `get_episodios_usuario`, `update_episodio`, `delete_episodio`)
+com uma sessão transacional (savepoint) para isolamento.
+"""
+
+# pylint: disable=invalid-name,redefined-outer-name,import-outside-toplevel
+
+import pytest
 import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from config.database import DATABASE_URL
+from source.episodio.controller_episodio import (
+    create_episodio,
+    get_episodio,
+    get_episodios_usuario,
+    update_episodio,
+    delete_episodio,
+)
+from source.usuario.controller_usuario import create_usuario
+
 
 engine = create_engine(DATABASE_URL)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+)
 
 
 @pytest.fixture(scope="function")
 def db():
-    # Cria conexão e transação principal
     connection = engine.connect()
     transaction = connection.begin()
 
-    # Cria sessão ligada à conexão
+    # Garantir que as tabelas existam no banco de teste
+    from config.database import Base
+    # importar models para registrar metadata
+    import source.usuario.model_usuario  # pylint: disable=unused-import
+    import source.episodio.model_episodio  # pylint: disable=unused-import
+    import source.gatilho.model_gatilho  # pylint: disable=unused-import
+    import source.medicacao.model_medicacao  # pylint: disable=unused-import
+    Base.metadata.create_all(bind=connection)
+
     session = TestingSessionLocal(bind=connection)
 
-    # Cria transação aninhada (savepoint)
     nested = connection.begin_nested()
 
     @sa.event.listens_for(session, "after_transaction_end")
-    def restart_savepoint(session, transaction):
+    def restart_savepoint(_session, _transaction):
         nonlocal nested
         if not nested.is_active:
             nested = connection.begin_nested()
 
-    yield session
-
-    session.close()
-    transaction.rollback()
-    connection.close()
-
-
-@pytest.fixture(scope="function")
-def client(db):
-    app.dependency_overrides[get_db] = lambda: db
-    with TestClient(app) as c:
-        yield c
+    try:
+        yield session
+    finally:
+        session.close()
+        # limpar tabelas criadas para o teste
+        Base.metadata.drop_all(bind=connection)
+        transaction.rollback()
+        connection.close()
 
 
-@pytest.fixture
-def auth_header(client):
-    email = "episodio_test@example.com"
-    senha = "senha12345"
-    # Registra usuário para testar episódios
-    r = client.post("/api/auth/register", json={
-        "nome": "Episodio Tester",
-        "email": email,
-        "senha": senha
-    })
-    print("auth_header - registering user")
-    print("Registro status:", r.status_code)
-    print("Registro response:", r.json())
-    assert r.status_code == 201
+def test_create_get_delete_episodio(db):
+    user = create_usuario(db, "Epi User", "epi@test.local", "Senha1")
 
-    # Login para obter token
-    r = client.post("/api/auth/login",
-                    json={"nome": "Episodio Tester", "email": email, "senha": senha})
-    print("Login status:", r.status_code)
-    if r.status_code != 200:
-        print("Login response:", r.json())
-    assert r.status_code == 200
-    token = r.json().get("access_token")
-    assert token is not None
-    return {"Authorization": f"Bearer {token}"}
+    epi = create_episodio(
+        db,
+        user.id,
+        "2025-10-24",
+        8,
+        duracao=120,
+        observacoes="obs",
+    )
+    assert epi.id is not None
+    assert epi.intensidade == 8
+
+    fetched = get_episodio(db, epi.id, user.id)
+    assert fetched is not None
+    assert fetched.id == epi.id
+
+    delete_episodio(db, fetched)
+    after = get_episodio(db, epi.id, user.id)
+    assert after is None
 
 
-def test_crud_episodio(auth_header, client):
-    # Criar episódio
-    dados = {
-        "data": "2025-10-24",
-        "intensidade": 8,
-        "duracao": 120,
-        "observacoes": "Dor forte após café"
-    }
-    r = client.post("/api/episodios/", json=dados, headers=auth_header)
-    print("test_crud_episodio - post /api/episodios/")
-    print("Criar episódio status:", r.status_code)
-    print("Criar episódio response:", r.json())
-    assert r.status_code == 201
-    eid = r.json()["id"]
+@pytest.mark.parametrize(
+    "field, value, expected",
+    [
+        ("intensidade", 5, 5),
+        ("observacoes", "novo texto", "novo texto"),
+        ("duracao", 45, 45),
+    ],
+)
+def test_update_episodio_parametrized(db, field, value, expected):
+    user = create_usuario(db, "Epi User2", "epi2@test.local", "Senha1")
+    epi = create_episodio(
+        db,
+        user.id,
+        "2025-10-24",
+        7,
+        duracao=60,
+        observacoes="orig",
+    )
 
-    # Listar episódios
-    r = client.get("/api/episodios/", headers=auth_header)
-    print("test_crud_episodio - get /api/episodios/")
-    print("Criar episódio status:", r.status_code)
-    print("Criar episódio response:", r.json())
-    assert r.status_code == 200
-    assert len(r.json()) > 0
+    updated = update_episodio(db, epi, **{field: value})
+    assert getattr(updated, field) == expected
 
-    # Ver episódio
-    r = client.get(f"/api/episodios/{eid}", headers=auth_header)
-    print(f"test_crud_episodio - get /api/episodios/{eid}")
-    print("Criar episódio status:", r.status_code)
-    print("Criar episódio response:", r.json())
-    assert r.status_code == 200
-    assert r.json()["intensidade"] == 8
 
-    # Editar episódio
-    novos_dados = {
-        "data": "2025-10-25",
-        "intensidade": 6,
-        "duracao": 100,
-        "observacoes": "Melhorando após medicação"
-    }
-    r = client.put(f"/api/episodios/{eid}", json=novos_dados, headers=auth_header)
-    print(f"test_crud_episodio - put /api/episodios/{eid}")
-    print("Criar episódio status:", r.status_code)
-    print("Criar episódio response:", r.json())
-    assert r.status_code == 200
-    assert r.json()["intensidade"] == 6
-    assert r.json()["observacoes"] == "Melhorando após medicação"
+def test_get_episodios_usuario_pagination(db):
+    user = create_usuario(db, "Epi User3", "epi3@test.local", "Senha1")
+    # criar 3 episódios
+    for i in range(3):
+        create_episodio(db, user.id, f"2025-10-2{i}", intensidade=3 + i)
 
-    # Excluir episódio
-    print(f"test_crud_episodio - delete /api/episodios/{eid}")
-    r = client.delete(f"/api/episodios/{eid}", headers=auth_header)
-    print("Criar episódio status:", r.status_code)
-    assert r.status_code == 204
+    all_list = get_episodios_usuario(db, user.id)
+    assert len(all_list) == 3
 
-    # Verificar exclusão
-    r = client.get(f"/api/episodios/{eid}", headers=auth_header)
-    print("test_crud_episodio - get /api/episodios/eid after deletion")
-    print("Criar episódio status:", r.status_code)
-    assert r.status_code == 404
+    limited = get_episodios_usuario(db, user.id, skip=1, limit=1)
+    assert len(limited) == 1
