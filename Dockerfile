@@ -17,6 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar código
 COPY . .
 
+COPY ca.pem /app/ca.pem
+
+
 # Expor porta
 EXPOSE 8000
 

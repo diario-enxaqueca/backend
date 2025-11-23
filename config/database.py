@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from config.settings import settings
+import pymysql
 
 # URL de conexão do banco
 DATABASE_URL = (
@@ -12,12 +13,22 @@ DATABASE_URL = (
     f"@{settings.MYSQL_HOST}:{settings.MYSQL_PORT}/{settings.MYSQL_DB}"
 )
 
+# Configura parâmetros extras
+connect_args = {}
+
+# PRODUCTION: SSL required
+if settings.MYSQL_USE_SSL:
+    connect_args["ssl"] = {
+        "ca": settings.MYSQL_SSL_CA
+    }
+
 # Engine do SQLAlchemy
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,  # Verifica conexão antes de usar
     pool_recycle=3600,   # Recicla conexões a cada hora
-    echo=settings.DEBUG  # Log SQL queries em modo debug
+    echo=settings.DEBUG,  # Log SQL queries em modo debug
+    connect_args=connect_args
 )
 
 # SessionLocal para criar sessões do banco

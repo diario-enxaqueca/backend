@@ -1,6 +1,7 @@
 """
 Configurações centralizadas da aplicação usando Pydantic Settings.
 """
+import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,6 +15,8 @@ class Settings(BaseSettings):
     MYSQL_DB: str
     MYSQL_HOST: str = "db"
     MYSQL_PORT: int = 3306
+    MYSQL_USE_SSL: bool = False
+    MYSQL_SSL_CA: str | None = None
 
     # Aplicação
     APP_HOST: str = "0.0.0.0"
@@ -37,7 +40,7 @@ class Settings(BaseSettings):
 
     # Configuração do Pydantic V2
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=os.getenv("ENV_FILE", ".env"),
         case_sensitive=True,
         extra="ignore"  # ✅ Ignora campos extras do .env
     )
