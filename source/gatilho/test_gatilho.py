@@ -9,11 +9,11 @@ criação, leitura, atualização, remoção e paginação. A fixture
 # pylint: disable=invalid-name,redefined-outer-name,import-outside-toplevel
 
 import pytest
-import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
-from config.database import DATABASE_URL
+# Usar SQLite em memória para isolar testes (não depende de MySQL)
 from source.gatilho.controller_gatilho import (
     create_gatilho,
     get_gatilho,
@@ -24,7 +24,12 @@ from source.gatilho.controller_gatilho import (
 from source.usuario.controller_usuario import create_usuario
 
 
-engine = create_engine(DATABASE_URL)
+SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///:memory:"
+engine = create_engine(
+    SQLALCHEMY_TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
 TestingSessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
@@ -34,32 +39,18 @@ TestingSessionLocal = sessionmaker(
 
 @pytest.fixture(scope="function")
 def db():
-    connection = engine.connect()
-    transaction = connection.begin()
+    """Fixture simples criando/droppando tabelas em SQLite em memória."""
+    from config.database import Base  # reutiliza metadata dos models
+    import source.usuario.model_usuario  # noqa: F401
+    import source.gatilho.model_gatilho  # noqa: F401
 
-    # Garantir que as tabelas existam para os testes
-    from config.database import Base
-    import source.usuario.model_usuario  # pylint: disable=unused-import
-    import source.gatilho.model_gatilho  # pylint: disable=unused-import
-    Base.metadata.create_all(bind=connection)
-
-    session = TestingSessionLocal(bind=connection)
-
-    nested = connection.begin_nested()
-
-    @sa.event.listens_for(session, "after_transaction_end")
-    def restart_savepoint(_session, _transaction):
-        nonlocal nested
-        if not nested.is_active:
-            nested = connection.begin_nested()
-
+    Base.metadata.create_all(bind=engine)
+    session = TestingSessionLocal()
     try:
         yield session
     finally:
         session.close()
-        Base.metadata.drop_all(bind=connection)
-        transaction.rollback()
-        connection.close()
+        Base.metadata.drop_all(bind=engine)
 
 
 def test_create_get_delete_gatilho(db):
