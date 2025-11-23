@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     """Configurações da aplicação carregadas do .env"""
 
     # Banco de Dados
-    MYSQL_ROOT_PASSWORD: str  # ✅ Adicionado
+    MYSQL_ROOT_PASSWORD: str | None = None
     MYSQL_USER: str
     MYSQL_PASSWORD: str
     MYSQL_DB: str
