@@ -2,6 +2,10 @@ from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 
 from .model_usuario import Usuario
+# imports locais usados apenas na função de exclusão para evitar ciclos
+from source.episodio.model_episodio import Episodio
+from source.gatilho.model_gatilho import Gatilho
+from source.medicacao.model_medicacao import Medicacao
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 MAX_PASSWORD_LENGTH = 72
@@ -42,5 +46,20 @@ def update_usuario(
 
 
 def delete_usuario(db: Session, usuario: Usuario):
+    """
+    Remove usuário e registros relacionados em ordem segura.
+
+    Estratégia: remover registros dependentes (episódios, gatilhos, medicações)
+    antes de deletar o usuário para evitar que o ORM tente atribuir NULL
+    a chaves estrangeiras que possuem `nullable=False`.
+    """
+    # Apaga episódios do usuário (remove também entradas nas tabelas auxiliares)
+    db.query(Episodio).filter(Episodio.usuario_id == usuario.id).delete(synchronize_session=False)
+
+    # Apaga gatilhos e medicações do usuário
+    db.query(Gatilho).filter(Gatilho.usuario_id == usuario.id).delete(synchronize_session=False)
+    db.query(Medicacao).filter(Medicacao.usuario_id == usuario.id).delete(synchronize_session=False)
+
+    # Por fim, apaga o usuário
     db.delete(usuario)
     db.commit()
