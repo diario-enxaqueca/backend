@@ -1,8 +1,9 @@
 """
 Model para Medicações - Medicamentos utilizados para tratar enxaquecas.
 """
-from sqlalchemy import Column, Integer, String, DateTime, \
-    ForeignKey, text, UniqueConstraint
+from sqlalchemy import (
+    Column, Integer, String, DateTime,
+    ForeignKey, text, UniqueConstraint)
 from sqlalchemy.orm import relationship
 from config.database import Base
 from source.episodio.model_episodio import episodio_medicacao

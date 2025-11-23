@@ -34,11 +34,15 @@ def db():
     """Cria um banco de dados limpo para cada teste."""
     # Garantir que as tabelas existam
     from config.database import Base
-    import source.usuario.model_usuario  # pylint: disable=unused-import
-    import source.medicacao.model_medicacao  # pylint: disable=unused-import
-    import source.episodio.model_episodio  # pylint: disable=unused-import
+    # pylint: disable=unused-import
+    # import source.usuario.model_usuario
+    # pylint: disable=unused-import
+    # import source.medicacao.model_medicacao
+    # pylint: disable=unused-import
+    # import source.episodio.model_episodio
     # Imports necessários para criar tabelas; ignorar se não usados diretamente
-    import source.gatilho.model_gatilho  # noqa: F401  # pylint: disable=unused-import
+    # noqa: F401  # pylint: disable=unused-import
+    # import source.gatilho.model_gatilho
 
     Base.metadata.create_all(bind=engine)
     db_session = testing_session_local()
@@ -174,9 +178,12 @@ def test_medicacao_duplicada(auth_header, client):
 @pytest.mark.parametrize(
     "dados_invalidos,campo_erro",
     [
-        ({"nome": "A", "dosagem": "500mg"}, "nome"),  # Nome curto
-        ({"nome": "X" * 101, "dosagem": "500mg"}, "nome"),  # Nome longo
-        ({"nome": "Paracetamol", "dosagem": "X" * 101}, "dosagem"),  # Dosagem longa
+        ({"nome": "A", "dosagem": "500mg"}, "nome"),
+        # Nome curto
+        ({"nome": "X" * 101, "dosagem": "500mg"}, "nome"),
+        # Nome longo
+        ({"nome": "Paracetamol", "dosagem": "X" * 101}, "dosagem"),
+        # Dosagem longa
     ],
 )
 def test_validacao_campos(auth_header, client, dados_invalidos, campo_erro):
@@ -242,9 +249,12 @@ def test_medicacao_sem_dosagem(auth_header, client):
 @pytest.mark.parametrize(
     "novo_nome,nova_dosagem,esperado_nome,esperado_dosagem",
     [
-        ("Novo Nome", "100mg", "Novo Nome", "100mg"),  # atualização normal
-        (None, None, "Original", None),  # sem alteração
-        ("Nome Atualizado", None, "Nome Atualizado", None),  # altera nome, remove dosagem
+        ("Novo Nome", "100mg", "Novo Nome", "100mg"),
+        # atualização normal
+        (None, None, "Original", None),
+        # sem alteração
+        ("Nome Atualizado", None, "Nome Atualizado", None),
+        # altera nome, remove dosagem
     ],
 )
 def test_update_medicacao_parametrizado(db, novo_nome, nova_dosagem,

@@ -1,4 +1,5 @@
-from sqlalchemy import Table, Column, Integer, Date, Text, DateTime, ForeignKey, text
+from sqlalchemy import (Table, Column, Integer, Date, Text,
+                        DateTime, ForeignKey, text)
 from sqlalchemy.orm import relationship
 from config.database import Base
 
@@ -6,15 +7,19 @@ from config.database import Base
 episodio_gatilho = Table(
     "episodio_gatilho",
     Base.metadata,
-    Column("episodio_id", Integer, ForeignKey("episodios.id"), primary_key=True),
-    Column("gatilho_id", Integer, ForeignKey("gatilhos.id"), primary_key=True),
+    Column("episodio_id", Integer,
+           ForeignKey("episodios.id"), primary_key=True),
+    Column("gatilho_id", Integer,
+           ForeignKey("gatilhos.id"), primary_key=True),
 )
 
 episodio_medicacao = Table(
     "episodio_medicacao",
     Base.metadata,
-    Column("episodio_id", Integer, ForeignKey("episodios.id"), primary_key=True),
-    Column("medicacao_id", Integer, ForeignKey("medicacoes.id"), primary_key=True),
+    Column("episodio_id", Integer,
+           ForeignKey("episodios.id"), primary_key=True),
+    Column("medicacao_id", Integer,
+           ForeignKey("medicacoes.id"), primary_key=True),
 )
 
 

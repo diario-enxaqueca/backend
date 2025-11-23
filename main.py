@@ -37,10 +37,14 @@ app.add_middleware(
 )
 
 # Registrar routers
-app.include_router(usuario_router, prefix="/api/usuarios", tags=["Usuários"])
-app.include_router(episodio_router, prefix="/api/episodios", tags=["Episódios"])
-app.include_router(gatilho_router, prefix="/api/gatilhos", tags=["Gatilhos"])
-app.include_router(medicacao_router, prefix="/api/medicacoes", tags=["Medicações"])
+app.include_router(usuario_router, prefix="/api/usuarios",
+                   tags=["Usuários"])
+app.include_router(episodio_router, prefix="/api/episodios",
+                   tags=["Episódios"])
+app.include_router(gatilho_router, prefix="/api/gatilhos",
+                   tags=["Gatilhos"])
+app.include_router(medicacao_router, prefix="/api/medicacoes",
+                   tags=["Medicações"])
 # rotas de autenticação ficam em serviço separado
 
 
