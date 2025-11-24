@@ -4,8 +4,9 @@ Ponto de entrada da aplicação FastAPI - Diário de Enxaqueca.
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import inspect
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
-from sqlalchemy import text
+from sqlalchemy.orm import sessionmaker
 from config.settings import settings
 from config.database import Base, engine
 
@@ -68,35 +69,32 @@ def startup_event():
     Também loga contagem de registros para diagnosticar perda de dados.
     """
     try:
-        with engine.connect() as conn:
-            # Verificar se tabela principal já existe
-            result = conn.execute(
-                text(
-                    "SELECT COUNT(*) FROM information_schema.tables "
-                    "WHERE table_schema = :db AND table_name = 'usuarios'"
-                ),
-                {"db": settings.MYSQL_DB},
-            ).scalar()
-            if result == 0:
-                # Nenhuma tabela 'usuarios' -> cria todas as definidas
-                Base.metadata.create_all(bind=conn)
-                logger.info(
-                    "Tabelas backend criadas (usuarios ausente)"
-                )
-            else:
-                logger.info("Tabela usuarios já existe; pulando create_all")
+        inspector = inspect(engine)
+        if not inspector.has_table('usuarios'):
+            # Nenhuma tabela 'usuarios' -> cria todas as definidas
+            Base.metadata.create_all(bind=engine)
+            logger.info("Tabelas backend criadas (usuarios ausente)")
+        else:
+            logger.info("Tabela usuarios já existe; pulando create_all")
 
-            # Logar contagem de linhas para diagnóstico
-            for tbl in ["usuarios", "episodios", "gatilhos", "medicacoes"]:
+        # Logar contagem de linhas para diagnóstico
+        SessionLocal = sessionmaker(
+            autocommit=False, autoflush=False, bind=engine
+        )
+        with SessionLocal() as db:
+            for model, name in [
+                (Usuario, "usuarios"),
+                (Episodio, "episodios"),
+                (Gatilho, "gatilhos"),
+                (Medicacao, "medicacoes"),
+            ]:
                 try:
-                    count = conn.execute(
-                        text(f"SELECT COUNT(*) FROM {tbl}")
-                    ).scalar()
-                    logger.info("Tabela %s possui %d registros", tbl, count)
+                    count = db.query(model).count()
+                    logger.info("Tabela %s possui %d registros", name, count)
                 except SQLAlchemyError as inner_exc:
                     logger.warning(
                         "Falha ao contar registros em %s: %s",
-                        tbl,
+                        name,
                         inner_exc,
                     )
     except OperationalError as exc:

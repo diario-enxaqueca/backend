@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from datetime import date
 
 from config.database import get_db
 from source.episodio.schemas_episodio import EpisodioCreate, EpisodioOut
@@ -28,12 +29,15 @@ def criar_episodio(ep: EpisodioCreate,
 @router.get("/", response_model=list[EpisodioOut], tags=["Episódios"])
 def listar_episodios(
     skip: int = 0,
-    limit: int = Query(10, le=100),
+    limit: int = Query(100, le=1000),
+    data_inicio: date = Query(None, description="Data inicial (YYYY-MM-DD)"),
+    data_fim: date = Query(None, description="Data final (YYYY-MM-DD)"),
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ):
     return get_episodios_usuario(
-        db, usuario_id=user.id, skip=skip, limit=limit
+        db, usuario_id=user.id, skip=skip, limit=limit,
+        data_inicio=data_inicio, data_fim=data_fim
     )
 
 

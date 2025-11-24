@@ -1,7 +1,7 @@
 from typing import Optional, List, Union
 from datetime import date
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from source.gatilho.model_gatilho import Gatilho
 from source.medicacao.model_medicacao import Medicacao
@@ -59,10 +59,21 @@ def get_episodios_usuario(
     usuario_id: int,
     skip: int = 0,
     limit: int = 10,
+    data_inicio: Optional[date] = None,
+    data_fim: Optional[date] = None,
 ):
-    return (
+    query = (
         db.query(Episodio)
+        .options(joinedload(Episodio.gatilhos),
+                 joinedload(Episodio.medicacoes))
         .filter(Episodio.usuario_id == usuario_id)
+    )
+    if data_inicio:
+        query = query.filter(Episodio.data >= data_inicio)
+    if data_fim:
+        query = query.filter(Episodio.data <= data_fim)
+    return (
+        query
         .order_by(Episodio.data.desc())
         .offset(skip).limit(limit)
         .all()
@@ -72,6 +83,8 @@ def get_episodios_usuario(
 def get_episodio(db: Session, episodio_id: int, usuario_id: int):
     return (
         db.query(Episodio)
+        .options(joinedload(Episodio.gatilhos),
+                 joinedload(Episodio.medicacoes))
         .filter(Episodio.id == episodio_id, Episodio.usuario_id == usuario_id)
         .first()
     )
