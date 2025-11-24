@@ -28,7 +28,7 @@ class EpisodioCreate(BaseModel):
 
 class EpisodioOut(BaseModel):
     id: int
-    data_inicio: str  # data como string
+    data_inicio: str = Field(alias="data")  # alias to map from model.data
     data_fim: Optional[str] = None  # calculada se duracao
     intensidade: int
     localizacao: Optional[str] = None  # placeholder, pode ser adicionado ao DB
@@ -40,7 +40,7 @@ class EpisodioOut(BaseModel):
 
     @validator("data_inicio", pre=True)
     # pylint: disable=no-self-argument
-    def convert_data_to_inicio(cls, value):
+    def convert_data_to_inicio(cls, value, values):
         if isinstance(value, date):
             return value.isoformat()
         return value
@@ -58,4 +58,5 @@ class EpisodioOut(BaseModel):
 
     class Config:
         from_attributes = True
+        allow_population_by_field_name = True
     # pylint: disable=too-few-public-methods
