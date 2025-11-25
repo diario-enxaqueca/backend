@@ -4,6 +4,7 @@ WORKDIR /app
 
 # Instalar dependências do sistema
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
     default-mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
@@ -24,4 +25,4 @@ COPY ca.pem /app/ca.pem
 EXPOSE 8000
 
 # Comando padrão
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
