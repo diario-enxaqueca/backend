@@ -42,8 +42,7 @@ def db():
     """Fixture simples criando/droppando tabelas em SQLite em memória."""
     from config.database import Base  # reutiliza metadata dos models
     # Imports apenas para registrar as tabelas no Base.metadata
-    import source.usuario.model_usuario  # noqa: F401
-    import source.gatilho.model_gatilho  # noqa: F401
+    import source.gatilho.model_gatilho  # pylint: disable=unused-import
 
     Base.metadata.create_all(bind=engine)
     session = TestingSessionLocal()

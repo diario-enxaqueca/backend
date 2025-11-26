@@ -1,6 +1,6 @@
+from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from datetime import date
 
 from config.database import get_db
 from source.episodio.schemas_episodio import EpisodioCreate, EpisodioOut
@@ -27,6 +27,7 @@ def criar_episodio(ep: EpisodioCreate,
 
 
 @router.get("/", response_model=list[EpisodioOut], tags=["Episódios"])
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 def listar_episodios(
     skip: int = 0,
     limit: int = Query(100, le=1000),

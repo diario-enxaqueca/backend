@@ -61,7 +61,7 @@ def client(db):
 
 
 @pytest.fixture
-def auth_header(db, client):
+def auth_header(db):
     """Cria usuário e retorna header de autenticação."""
     # Criar usuário diretamente no banco
     from source.usuario.model_usuario import Usuario

@@ -78,10 +78,10 @@ def startup_event():
             logger.info("Tabela usuarios já existe; pulando create_all")
 
         # Logar contagem de linhas para diagnóstico
-        SessionLocal = sessionmaker(
+        session_local = sessionmaker(
             autocommit=False, autoflush=False, bind=engine
         )
-        with SessionLocal() as db:
+        with session_local() as db:
             for model, name in [
                 (Usuario, "usuarios"),
                 (Episodio, "episodios"),

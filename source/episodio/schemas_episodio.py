@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from typing import Optional, List
-from datetime import date, datetime, timedelta
+from datetime import date
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 from source.gatilho.schemas_gatilho import GatilhoOut
 from source.medicacao.schemas_medicacao import MedicacaoOut
@@ -38,25 +38,13 @@ class EpisodioOut(BaseModel):
     gatilhos: List[GatilhoOut] = []
     medicacoes: List[MedicacaoOut] = []
 
-    @validator("data_inicio", pre=True)
+    @field_validator("data_inicio", mode='before')
     # pylint: disable=no-self-argument
-    def convert_data_to_inicio(cls, value, values):
+    def convert_data_to_inicio(cls, value):
         if isinstance(value, date):
             return value.isoformat()
         return value
 
-    @validator("data_fim", pre=True)
-    # pylint: disable=no-self-argument
-    def calculate_data_fim(cls, value, values):
-        if 'duracao' in values and values['duracao'] and 'data' in values:
-            data = values['data']
-            if isinstance(data, date):
-                data_fim = (datetime.combine(data, datetime.min.time()) +
-                            timedelta(minutes=values['duracao']))
-                return data_fim.isoformat()
-        return None
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
-    class Config:
-        from_attributes = True
-        allow_population_by_field_name = True
-    # pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods
