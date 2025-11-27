@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     # Ambiente
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
+    FRONTEND_URL: str = "http://localhost:3000"
 
     # Configurações de email SMTP para FastMail
     MAIL_USERNAME: str
